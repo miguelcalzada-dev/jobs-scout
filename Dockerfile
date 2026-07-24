@@ -16,9 +16,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN playwright install --with-deps chromium 2>/dev/null || \
-    (playwright install chromium && playwright install-deps chromium)
-
 COPY . .
 
 RUN mkdir -p data cv && touch data/.gitkeep
@@ -28,4 +25,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
-CMD python src/main.py --port ${PORT:-8080}
+CMD python3 src/main.py --port ${PORT:-8080}
