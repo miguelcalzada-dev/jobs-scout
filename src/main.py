@@ -233,6 +233,17 @@ async def lifespan(app: FastAPI):
     init_db()
 
     prefs = load_preferences()
+
+    if not prefs.desired_titles:
+        prefs.desired_titles = list(_TITULOS_POR_DEFECTO)
+    if not prefs.tech_stack:
+        prefs.tech_stack = list(_TECH_STACK_POR_DEFECTO)
+
+    for key, value in _PREFS_FIJOS.items():
+        setattr(prefs, key, value)
+
+    save_preferences(prefs)
+
     cv = load_cv_profile()
 
     if not cv and not prefs.tech_stack:
