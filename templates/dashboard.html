@@ -15,8 +15,11 @@
             --text-muted: #64748b;
             --border: #e8ecf1;
             --success: #0d8a3a;
+            --success-bg: #e6ffed;
             --warning: #b8760b;
+            --warning-bg: #fef3c7;
             --danger: #e11d48;
+            --danger-bg: #ffe5ea;
             --linkedin: #0a66c2;
             --infojobs: #e11d48;
             --tecnoempleo: #065f46;
@@ -77,16 +80,6 @@
 
         .page { display: none; }
         .page.active { display: block; }
-
-        .header-card {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 28px 32px;
-            border-radius: var(--radius);
-            margin-bottom: 24px;
-        }
-        .header-card h1 { font-size: 26px; margin-bottom: 4px; }
-        .header-card .last-run { opacity: .8; font-size: 13px; }
 
         .stats-grid {
             display: grid;
@@ -162,8 +155,8 @@
             border-radius: 20px;
             font-size: 13px;
         }
-        .score-ok { background: #e6ffed; color: var(--success); }
-        .score-mid { background: #fef3c7; color: var(--warning); }
+        .score-ok { background: var(--success-bg); color: var(--success); }
+        .score-mid { background: var(--warning-bg); color: var(--warning); }
         .score-low { background: #f1f5f9; color: var(--text-muted); }
         .job-info { flex:1; min-width:0; }
         .job-title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -221,31 +214,127 @@
         }
         @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 
+        /* ── CV Profile Feed ── */
+        .cv-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 18px;
+            border-radius: var(--radius);
+            margin-bottom: 18px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .cv-status-bar.loaded { background: var(--success-bg); color: var(--success); border: 1px solid #b7ebc5; }
+        .cv-status-bar.empty { background: var(--warning-bg); color: var(--warning); border: 1px solid #fde68a; }
+        .cv-status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .cv-status-bar.loaded .cv-status-dot { background: var(--success); }
+        .cv-status-bar.empty .cv-status-dot { background: var(--warning); }
+
+        .profile-feed { display: none; }
+        .profile-feed.show { display: block; }
+
+        .profile-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .profile-avatar {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .profile-name-box h3 { font-size: 18px; margin-bottom: 2px; }
+        .profile-name-box .email { font-size: 13px; color: var(--primary); }
+        .profile-name-box .linkedin-link { font-size: 12px; color: var(--text-muted); }
+
+        .profile-stats-row {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .profile-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        .profile-stat .ps-val { font-size: 20px; font-weight: 700; color: var(--primary); }
+        .profile-stat .ps-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+
+        .profile-section { margin-bottom: 18px; }
+        .profile-section h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .profile-summary {
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.6;
+            background: #f8fafd;
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+        .tech-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .tech-badge {
+            background: #eef2ff;
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        .timeline-item {
+            padding: 8px 0 8px 16px;
+            border-left: 2px solid var(--border);
+            margin-left: 8px;
+            margin-bottom: 4px;
+        }
+        .timeline-item:last-child { border-left-color: transparent; }
+        .timeline-item .ti-title { font-weight: 600; font-size: 14px; }
+        .timeline-item .ti-sub { font-size: 12px; color: var(--text-muted); }
+        .timeline-item .ti-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
         .cv-upload-zone {
             border: 2px dashed var(--border);
             border-radius: var(--radius);
-            padding: 40px 20px;
+            padding: 36px 20px;
             text-align: center;
             cursor: pointer;
             transition: all .15s;
+            background: #fafbfc;
         }
         .cv-upload-zone:hover, .cv-upload-zone.dragover {
             border-color: var(--primary);
             background: rgba(102,126,234,.04);
         }
-        .cv-upload-zone .icon { font-size: 40px; margin-bottom: 8px; }
+        .cv-upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
         .cv-upload-zone p { color: var(--text-muted); font-size: 14px; }
         .cv-upload-zone input[type=file] { display: none; }
 
-        .cv-profile-card {
-            background: #f8fafd;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 16px;
-            margin-top: 16px;
-        }
-        .cv-profile-card h3 { font-size: 15px; margin-bottom: 8px; }
-        .cv-profile-card .tech-list { display: flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+        .upload-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+        .upload-section p { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
 
         .toast {
             position: fixed;
@@ -253,13 +342,15 @@
             right: 24px;
             background: #1a1a2e;
             color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 14px 24px;
+            border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
             z-index: 999;
             animation: slideUp .3s ease;
-            box-shadow: 0 4px 20px rgba(0,0,0,.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,.18);
+            max-width: 400px;
+            line-height: 1.4;
         }
         .toast.success { background: var(--success); }
         .toast.error { background: var(--danger); }
@@ -293,6 +384,25 @@
             color: #92400e;
             margin-bottom: 16px;
         }
+        table.historial {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        table.historial th {
+            text-align: left;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 11px;
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        table.historial td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        #upload-section-new-cv { display: none; }
     </style>
 </head>
 <body>
@@ -314,7 +424,6 @@
 
     <div class="container">
 
-        <!-- STATS -->
         <div class="stats-grid">
             <div class="stat-card"><div class="val">{{ stats.total_jobs }}</div><div class="lbl">Ofertas totales</div></div>
             <div class="stat-card"><div class="val">{{ stats.scored_jobs }}</div><div class="lbl">Evaluadas</div></div>
@@ -322,7 +431,7 @@
             <div class="stat-card"><div class="val">{{ stats.applied_jobs }}</div><div class="lbl">Aplicadas</div></div>
         </div>
 
-        <!-- TAB: OFERTAS -->
+        <!-- ── TAB: OFERTAS ── -->
         <div id="tab-ofertas" class="page active">
             <div class="card">
                 <div class="card-header">
@@ -332,7 +441,7 @@
                 {% if jobs %}
                 <div>
                     {% for job in jobs %}
-                    <div class="job-row">
+                    <div class="job-row" id="job-{{ job.id }}">
                         <span class="job-score {% if job.match_score >= 70 %}score-ok{% elif job.match_score >= 40 %}score-mid{% else %}score-low{% endif %}">
                             {{ "%.0f"|format(job.match_score) }}%
                         </span>
@@ -343,7 +452,7 @@
                                 {% if job.salary %}&bull; &#128176; {{ job.salary }}{% endif %}
                                 <span class="source-tag source-{{ job.source }}" style="margin-left:6px;">{{ job.source }}</span>
                                 {% if job.remote %}<span style="background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:3px;font-size:10px;margin-left:4px;">Remoto</span>{% endif %}
-                                {% if job.hybrid %}<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-size:10px;margin-left:4px;">Híbrido</span>{% endif %}
+                                {% if job.hybrid %}<span style="background:var(--warning-bg);color:var(--warning);padding:1px 6px;border-radius:3px;font-size:10px;margin-left:4px;">Híbrido</span>{% endif %}
                             </div>
                             {% set techs = (job.technologies_detected or '').split(',') %}
                             {% if techs and techs[0] %}
@@ -370,57 +479,50 @@
             </div>
         </div>
 
-        <!-- TAB: MI CV -->
+        <!-- ── TAB: MI CV ── -->
         <div id="tab-cv" class="page">
             <div class="card">
-                <div class="card-header">&#128196; Subir / Actualizar CV</div>
-                <div class="card-body">
-                    {% if cv %}
-                    <div class="info-box">
-                        CV cargado: <strong>{{ cv.full_name or 'CV' }}</strong> &bull;
-                        {{ cv.experience_years }} años exp. &bull;
-                        {{ cv.technologies|length }} tecnologías detectadas
+                <div class="card-header">&#128100; Mi Perfil</div>
+                <div class="card-body" id="cv-card-body">
+                    {% if cv and (cv.technologies or cv.summary or cv.full_name) %}
+                    <div class="cv-status-bar loaded">
+                        <span class="cv-status-dot"></span>
+                        CV analizado correctamente &mdash; el matching usa tu perfil para puntuar ofertas
                     </div>
-                    <div class="cv-profile-card">
-                        <h3>Perfil extraído del CV</h3>
-                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">{{ cv.summary[:300] or 'Sin resumen' }}</p>
-                        <div class="tech-list">
-                            {% for tech in cv.technologies[:15] %}
-                            <span class="tech-tag">{{ tech }}</span>
-                            {% endfor %}
-                        </div>
-                        {% if cv.work_history %}
-                        <div style="margin-top:10px;font-size:12px;">
-                            <strong>&#128188; Experiencia:</strong>
-                            {% for w in cv.work_history[:3] %}
-                            <div style="margin-top:2px;color:var(--text-muted);">- {{ w.get('title','') }} en {{ w.get('company','') }} ({{ w.get('period','') }})</div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
+                    <div class="profile-feed show" id="profile-feed">
+                        {{ profile_feed_html|safe }}
+                    </div>
+                    <div class="upload-section">
+                        <p>¿Quieres actualizar tu CV? Sube una versión nueva:</p>
+                        <form id="cv-upload-form-update" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;">
+                            <input type="file" name="cv_file" accept=".pdf" id="cv-file-input-update" style="font-size:13px;">
+                            <button type="submit" class="btn btn-outline btn-sm" id="btn-upload-cv-update">&#128228; Actualizar</button>
+                        </form>
                     </div>
                     {% else %}
-                    <div class="warning-box">
-                        &#9888; No hay CV cargado. Sube tu CV en PDF para mejorar el matching de ofertas.
+                    <div class="cv-status-bar empty">
+                        <span class="cv-status-dot"></span>
+                        No hay CV cargado. Sube tu CV en PDF para mejorar drásticamente el matching.
                     </div>
-                    {% endif %}
-
-                    <form id="cv-upload-form" enctype="multipart/form-data" style="margin-top:16px;">
+                    <div class="profile-feed" id="profile-feed"></div>
+                    <form id="cv-upload-form" enctype="multipart/form-data">
                         <div class="cv-upload-zone" id="cv-drop-zone">
                             <div class="icon">&#128193;</div>
                             <p>Arrastra tu CV en PDF aquí o haz clic para seleccionarlo</p>
                             <p style="font-size:11px;color:var(--text-muted);">Solo archivos PDF</p>
                             <input type="file" name="cv_file" accept=".pdf" id="cv-file-input">
                         </div>
-                        <div id="cv-file-name" style="margin-top:8px;font-size:13px;color:var(--text-muted);"></div>
+                        <div id="cv-file-name" style="margin-top:10px;font-size:13px;color:var(--text-muted);"></div>
                         <button type="submit" class="btn btn-primary" style="margin-top:12px;" id="btn-upload-cv">
                             &#128228; Subir y analizar CV
                         </button>
                     </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- TAB: PREFERENCIAS -->
+        <!-- ── TAB: PREFERENCIAS ── -->
         <div id="tab-preferencias" class="page">
             <div class="card">
                 <div class="card-header">&#9881; Configurar preferencias de búsqueda</div>
@@ -478,35 +580,35 @@
             </div>
         </div>
 
-        <!-- TAB: HISTORIAL -->
+        <!-- ── TAB: HISTORIAL ── -->
         <div id="tab-historial" class="page">
             <div class="card">
                 <div class="card-header">&#128337; Historial de ejecuciones</div>
                 <div class="card-body">
                     {% if scrape_runs %}
-                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <table class="historial">
                         <thead>
-                            <tr style="border-bottom:1px solid var(--border);text-align:left;color:var(--text-muted);text-transform:uppercase;font-size:11px;">
-                                <th style="padding:8px;">Fecha</th>
-                                <th style="padding:8px;">Plataforma</th>
-                                <th style="padding:8px;">Estado</th>
-                                <th style="padding:8px;">Ofertas</th>
-                                <th style="padding:8px;">Duración</th>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Plataforma</th>
+                                <th>Estado</th>
+                                <th>Ofertas</th>
+                                <th>Duración</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for run in scrape_runs %}
-                            <tr style="border-bottom:1px solid var(--border);">
-                                <td style="padding:8px;">{{ run.run_date[:16] }}</td>
-                                <td style="padding:8px;">{{ run.source }}</td>
-                                <td style="padding:8px;">
+                            <tr>
+                                <td>{{ run.run_date[:16] }}</td>
+                                <td>{{ run.source }}</td>
+                                <td>
                                     {% if run.status == 'success' %}<span style="color:var(--success);">&#10003;</span>
                                     {% elif run.status == 'partial' %}<span style="color:var(--warning);">&#9888;</span>
                                     {% else %}<span style="color:var(--danger);">&#10007;</span>{% endif %}
                                     {{ run.status }}
                                 </td>
-                                <td style="padding:8px;">{{ run.offers_found }}</td>
-                                <td style="padding:8px;">{{ "%.1f"|format(run.duration_seconds) }}s</td>
+                                <td>{{ run.offers_found }}</td>
+                                <td>{{ "%.1f"|format(run.duration_seconds) }}s</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -529,104 +631,251 @@
         function showTab(name) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
-            document.getElementById('tab-' + name).classList.add('active');
-            document.querySelector('.nav-links a[href="#' + name + '"]').classList.add('active');
+            var tab = document.getElementById('tab-' + name);
+            if (tab) tab.classList.add('active');
+            var link = document.querySelector('.nav-links a[href="#' + name + '"]');
+            if (link) link.classList.add('active');
         }
 
         function toast(msg, type) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
+            var t = document.getElementById('toast');
+            t.innerHTML = msg;
             t.className = 'toast ' + (type || '');
             t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 3000);
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(function(){ t.style.display = 'none'; }, 4000);
         }
 
-        const cvZone = document.getElementById('cv-drop-zone');
-        const cvInput = document.getElementById('cv-file-input');
-        const cvFileName = document.getElementById('cv-file-name');
+        // ── CV Upload (initial) ──
+        var cvZone = document.getElementById('cv-drop-zone');
+        var cvInput = document.getElementById('cv-file-input');
+        var cvFileName = document.getElementById('cv-file-name');
+        if (cvZone && cvInput) {
+            cvZone.addEventListener('click', function(){ cvInput.click(); });
+            cvZone.addEventListener('dragover', function(e){ e.preventDefault(); cvZone.classList.add('dragover'); });
+            cvZone.addEventListener('dragleave', function(){ cvZone.classList.remove('dragover'); });
+            cvZone.addEventListener('drop', function(e){
+                e.preventDefault();
+                cvZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    cvInput.files = e.dataTransfer.files;
+                    cvFileName.textContent = 'Archivo: ' + e.dataTransfer.files[0].name;
+                }
+            });
+            cvInput.addEventListener('change', function(){
+                cvFileName.textContent = cvInput.files.length ? 'Archivo: ' + cvInput.files[0].name : '';
+            });
 
-        cvZone.addEventListener('click', () => cvInput.click());
-        cvZone.addEventListener('dragover', (e) => { e.preventDefault(); cvZone.classList.add('dragover'); });
-        cvZone.addEventListener('dragleave', () => cvZone.classList.remove('dragover'));
-        cvZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            cvZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) {
-                cvInput.files = e.dataTransfer.files;
-                cvFileName.textContent = 'Archivo: ' + e.dataTransfer.files[0].name;
-            }
-        });
-        cvInput.addEventListener('change', () => {
-            cvFileName.textContent = cvInput.files.length ? 'Archivo: ' + cvInput.files[0].name : '';
-        });
+            document.getElementById('cv-upload-form').addEventListener('submit', handleCvUpload);
+        }
 
-        document.getElementById('cv-upload-form').addEventListener('submit', async (e) => {
+        // ── CV Upload (update) ──
+        var formUpdate = document.getElementById('cv-upload-form-update');
+        if (formUpdate) {
+            formUpdate.addEventListener('submit', handleCvUpdate);
+        }
+
+        async function handleCvUpload(e) {
             e.preventDefault();
-            const file = cvInput.files[0];
+            var file = (document.getElementById('cv-file-input') || {}).files[0];
+            await doUploadCv(file, 'btn-upload-cv');
+        }
+
+        async function handleCvUpdate(e) {
+            e.preventDefault();
+            var file = (document.getElementById('cv-file-input-update') || {}).files[0];
+            if (!file) { toast('Selecciona un archivo PDF', 'error'); return; }
+            if (!file.name.endsWith('.pdf')) { toast('Solo se aceptan archivos PDF', 'error'); return; }
+            await doUploadCv(file, 'btn-upload-cv-update');
+        }
+
+        async function doUploadCv(file, btnId) {
             if (!file) { toast('Selecciona un archivo PDF', 'error'); return; }
             if (!file.name.endsWith('.pdf')) { toast('Solo se aceptan archivos PDF', 'error'); return; }
 
-            const btn = document.getElementById('btn-upload-cv');
+            var btn = document.getElementById(btnId);
+            if (!btn) return;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Analizando CV...';
+            btn.innerHTML = '<span class="spinner"></span> Analizando...';
 
-            const formData = new FormData();
+            var formData = new FormData();
             formData.append('cv_file', file);
 
             try {
-                const res = await fetch('/upload-cv', { method: 'POST', body: formData });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Error'); }
-                const data = await res.json();
-                toast('CV analizado correctamente. Tecnologías: ' + (data.technologies || []).join(', '), 'success');
-                setTimeout(() => location.reload(), 1500);
+                var res = await fetch('/upload-cv', { method: 'POST', body: formData });
+                if (!res.ok) { var err = await res.json(); throw new Error(err.detail || 'Error'); }
+                var data = await res.json();
+
+                // Render profile feed dynamically
+                renderProfileFeed(data);
+
+                // Update status bar
+                var statusBar = document.querySelector('#tab-cv .cv-status-bar');
+                if (statusBar) {
+                    statusBar.className = 'cv-status-bar loaded';
+                    statusBar.innerHTML = '<span class="cv-status-dot"></span> CV analizado correctamente &mdash; el matching usa tu perfil para puntuar ofertas';
+                }
+
+                // Hide initial upload zone, show profile + update section
+                var uploadForm = document.getElementById('cv-upload-form');
+                if (uploadForm) uploadForm.style.display = 'none';
+
+                var uploadSection = document.querySelector('#tab-cv .upload-section');
+                if (!uploadSection) {
+                    uploadSection = document.createElement('div');
+                    uploadSection.className = 'upload-section';
+                    uploadSection.innerHTML = '<p>¿Quieres actualizar tu CV? Sube una versión nueva:</p>' +
+                        '<form id="cv-upload-form-update" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;">' +
+                        '<input type="file" name="cv_file" accept=".pdf" id="cv-file-input-update" style="font-size:13px;">' +
+                        '<button type="submit" class="btn btn-outline btn-sm" id="btn-upload-cv-update">&#128228; Actualizar</button></form>';
+                    document.getElementById('cv-card-body').appendChild(uploadSection);
+                    document.getElementById('cv-upload-form-update').addEventListener('submit', handleCvUpdate);
+                }
+
+                var techList = (data.technologies || []).slice(0, 8).join(', ');
+                toast('&#10003; CV analizado correctamente<br><small>' + techList + '</small>', 'success');
             } catch (err) {
                 toast('Error: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '&#128228; Subir y analizar CV';
+                if (btnId === 'btn-upload-cv') btn.innerHTML = '&#128228; Subir y analizar CV';
+                else btn.innerHTML = '&#128228; Actualizar';
             }
-        });
+        }
 
-        document.getElementById('prefs-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const form = e.target;
+        function renderProfileFeed(data) {
+            var feed = document.getElementById('profile-feed');
+            if (!feed) return;
+            feed.className = 'profile-feed show';
 
-            const data = {
-                desired_titles: form.desired_titles.value.split(',').map(s => s.trim()).filter(Boolean),
-                tech_stack: form.tech_stack.value.split(',').map(s => s.trim()).filter(Boolean),
-                location: form.location.value,
-                min_salary: parseInt(form.min_salary.value) || 0,
-                seniority: form.seniority.value,
-                remote_only: form.modality.value === 'remote',
-                hybrid_allowed: form.modality.value === 'hybrid' || form.modality.value === 'any',
-                onsite_allowed: form.modality.value === 'any',
-                exclude_keywords: form.exclude_keywords.value.split(',').map(s => s.trim()).filter(Boolean),
-                exclude_sectors: form.exclude_sectors.value.split(',').map(s => s.trim()).filter(Boolean),
-            };
+            var initials = (data.full_name || 'CV').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase() || '?';
+            var expYears = data.experience_years || 0;
+            var techs = data.technologies || [];
+            var workHistory = data.work_history || [];
+            var education = data.education || [];
+            var langs = data.languages || [];
+            var certs = data.certifications || [];
 
-            try {
-                const res = await fetch('/preferences', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Error'); }
-                toast('Preferencias guardadas', 'success');
-                setTimeout(() => location.reload(), 1000);
-            } catch (err) {
-                toast('Error: ' + err.message, 'error');
+            var html = '<div class="profile-header">';
+            html += '<div class="profile-avatar">' + initials + '</div>';
+            html += '<div class="profile-name-box">';
+            html += '<h3>' + escapeHtml(data.full_name || 'Perfil CV') + '</h3>';
+            if (data.email) html += '<div class="email">' + escapeHtml(data.email) + '</div>';
+            if (data.linkedin) html += '<div class="linkedin-link">' + escapeHtml(data.linkedin) + '</div>';
+            html += '</div></div>';
+
+            html += '<div class="profile-stats-row">';
+            html += '<div class="profile-stat"><span class="ps-val">' + expYears + '</span><span class="ps-lbl">Años exp.</span></div>';
+            html += '<div class="profile-stat"><span class="ps-val">' + techs.length + '</span><span class="ps-lbl">Tecnologías</span></div>';
+            html += '<div class="profile-stat"><span class="ps-val">' + workHistory.length + '</span><span class="ps-lbl">Empresas</span></div>';
+            html += '<div class="profile-stat"><span class="ps-val">' + langs.length + '</span><span class="ps-lbl">Idiomas</span></div>';
+            html += '</div>';
+
+            if (data.summary) {
+                html += '<div class="profile-section"><h4>&#128172; Resumen</h4><div class="profile-summary">' + escapeHtml(data.summary) + '</div></div>';
             }
-        });
 
+            if (techs.length > 0) {
+                html += '<div class="profile-section"><h4>&#128187; Tecnologías</h4><div class="tech-grid">';
+                for (var i = 0; i < techs.length; i++) {
+                    html += '<span class="tech-badge">' + escapeHtml(techs[i]) + '</span>';
+                }
+                html += '</div></div>';
+            }
+
+            if (workHistory.length > 0) {
+                html += '<div class="profile-section"><h4>&#128188; Experiencia</h4>';
+                for (var j = 0; j < Math.min(workHistory.length, 6); j++) {
+                    var w = workHistory[j];
+                    html += '<div class="timeline-item">';
+                    html += '<div class="ti-title">' + escapeHtml(w.title || '') + '</div>';
+                    html += '<div class="ti-sub">' + escapeHtml(w.company || '') + (w.period ? ' &middot; ' + escapeHtml(w.period) : '') + '</div>';
+                    if (w.description) html += '<div class="ti-desc">' + escapeHtml(w.description).substring(0, 200) + '</div>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            if (education.length > 0) {
+                html += '<div class="profile-section"><h4>&#127891; Formación</h4>';
+                for (var k = 0; k < Math.min(education.length, 4); k++) {
+                    var e = education[k];
+                    html += '<div class="timeline-item">';
+                    html += '<div class="ti-title">' + escapeHtml(e.degree || '') + '</div>';
+                    html += '<div class="ti-sub">' + escapeHtml(e.institution || '') + (e.year ? ' &middot; ' + escapeHtml(e.year) : '') + '</div>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            if (langs.length > 0) {
+                html += '<div class="profile-section"><h4>&#127760; Idiomas</h4><div class="tech-grid">';
+                for (var l = 0; l < langs.length; l++) {
+                    html += '<span class="tech-badge">' + escapeHtml(langs[l]) + '</span>';
+                }
+                html += '</div></div>';
+            }
+
+            if (certs.length > 0) {
+                html += '<div class="profile-section"><h4>&#127942; Certificaciones</h4><div class="tech-grid">';
+                for (var c = 0; c < certs.length; c++) {
+                    html += '<span class="tech-badge">' + escapeHtml(certs[c]) + '</span>';
+                }
+                html += '</div></div>';
+            }
+
+            feed.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // ── Preferences ──
+        var prefsForm = document.getElementById('prefs-form');
+        if (prefsForm) {
+            prefsForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                var form = e.target;
+
+                var data = {
+                    desired_titles: form.desired_titles.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+                    tech_stack: form.tech_stack.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+                    location: form.location.value,
+                    min_salary: parseInt(form.min_salary.value) || 0,
+                    seniority: form.seniority.value,
+                    remote_only: form.modality.value === 'remote',
+                    hybrid_allowed: form.modality.value === 'hybrid' || form.modality.value === 'any',
+                    onsite_allowed: form.modality.value === 'any',
+                    exclude_keywords: form.exclude_keywords.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+                    exclude_sectors: form.exclude_sectors.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+                };
+
+                try {
+                    var res = await fetch('/preferences', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                    });
+                    if (!res.ok) { var err = await res.json(); throw new Error(err.detail || 'Error'); }
+                    toast('&#10003; Preferencias guardadas correctamente', 'success');
+                } catch (err) {
+                    toast('Error: ' + err.message, 'error');
+                }
+            });
+        }
+
+        // ── Scrape trigger ──
         async function triggerScrape() {
-            const btn = document.getElementById('btn-scrape');
+            var btn = document.getElementById('btn-scrape');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Buscando...';
             try {
-                const res = await fetch('/run', { method: 'POST' });
+                var res = await fetch('/run', { method: 'POST' });
                 if (!res.ok) throw new Error('Error al iniciar búsqueda');
-                toast('¡Búsqueda iniciada! Espera ~30 segundos y recarga.', 'success');
-                setTimeout(() => location.reload(), 20000);
+                toast('&#128260; ¡Búsqueda iniciada! Recarga en ~30s para ver resultados.', 'success');
+                setTimeout(function(){ location.reload(); }, 25000);
             } catch (err) {
                 toast('Error: ' + err.message, 'error');
                 btn.disabled = false;
@@ -634,11 +883,14 @@
             }
         }
 
+        // ── Job actions ──
         async function markApplied(id) {
             try {
-                await fetch('/jobs/' + id + '/apply', { method: 'POST' });
-                toast('Marcada como aplicada', 'success');
-                setTimeout(() => location.reload(), 800);
+                var res = await fetch('/jobs/' + id + '/apply', { method: 'POST' });
+                if (!res.ok) throw new Error('Error');
+                var row = document.getElementById('job-' + id);
+                if (row) { row.style.opacity = '0.5'; row.style.pointerEvents = 'none'; }
+                toast('&#10003; Marcada como aplicada', 'success');
             } catch (err) {
                 toast('Error al marcar', 'error');
             }
@@ -646,17 +898,20 @@
 
         async function markDiscarded(id) {
             try {
-                await fetch('/jobs/' + id + '/discard', { method: 'POST' });
+                var res = await fetch('/jobs/' + id + '/discard', { method: 'POST' });
+                if (!res.ok) throw new Error('Error');
+                var row = document.getElementById('job-' + id);
+                if (row) row.remove();
                 toast('Oferta descartada', 'success');
-                setTimeout(() => location.reload(), 800);
             } catch (err) {
                 toast('Error al descartar', 'error');
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const hash = window.location.hash.replace('#', '');
-            if (hash && ['ofertas', 'cv', 'preferencias', 'historial'].includes(hash)) {
+        // ── Init ──
+        document.addEventListener('DOMContentLoaded', function() {
+            var hash = window.location.hash.replace('#', '');
+            if (hash && ['ofertas', 'cv', 'preferencias', 'historial'].indexOf(hash) >= 0) {
                 showTab(hash);
             }
         });

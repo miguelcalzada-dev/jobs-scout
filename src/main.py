@@ -417,6 +417,8 @@ async def dashboard():
     else:
         last_run_text = "Sin búsquedas aún"
 
+    profile_feed_html = _build_profile_feed_html(cv) if cv else ""
+
     template = _jinja_env.get_template("dashboard.html")
     return template.render(
         stats=stats_data,
@@ -426,7 +428,99 @@ async def dashboard():
         scrape_runs=scrape_runs,
         last_run_text=last_run_text,
         settings=settings,
+        profile_feed_html=profile_feed_html,
     )
+
+
+def _build_profile_feed_html(cv) -> str:
+    if not cv:
+        return ""
+    initials = "".join([w[0] for w in (cv.full_name or "CV").split()[:2]]).upper() or "?"
+
+    html = '<div class="profile-header">'
+    html += f'<div class="profile-avatar">{initials}</div>'
+    html += '<div class="profile-name-box">'
+    html += f'<h3>{cv.full_name or "Perfil CV"}</h3>'
+    if cv.email:
+        html += f'<div class="email">{cv.email}</div>'
+    if cv.linkedin:
+        html += f'<div class="linkedin-link">{cv.linkedin}</div>'
+    html += '</div></div>'
+
+    html += '<div class="profile-stats-row">'
+    html += f'<div class="profile-stat"><span class="ps-val">{cv.experience_years}</span><span class="ps-lbl">Años exp.</span></div>'
+    html += f'<div class="profile-stat"><span class="ps-val">{len(cv.technologies)}</span><span class="ps-lbl">Tecnologías</span></div>'
+    html += f'<div class="profile-stat"><span class="ps-val">{len(cv.work_history)}</span><span class="ps-lbl">Empresas</span></div>'
+    html += f'<div class="profile-stat"><span class="ps-val">{len(cv.languages)}</span><span class="ps-lbl">Idiomas</span></div>'
+    html += '</div>'
+
+    if cv.summary:
+        html += f'<div class="profile-section"><h4>&#128172; Resumen</h4><div class="profile-summary">{cv.summary[:500]}</div></div>'
+
+    if cv.technologies:
+        html += '<div class="profile-section"><h4>&#128187; Tecnologías</h4><div class="tech-grid">'
+        for tech in cv.technologies[:20]:
+            html += f'<span class="tech-badge">{tech}</span>'
+        html += '</div></div>'
+
+    if cv.work_history:
+        html += '<div class="profile-section"><h4>&#128188; Experiencia</h4>'
+        for w in cv.work_history[:6]:
+            html += '<div class="timeline-item">'
+            html += f'<div class="ti-title">{w.get("title", "")}</div>'
+            html += f'<div class="ti-sub">{w.get("company", "")}'
+            if w.get("period"):
+                html += f' &middot; {w["period"]}'
+            html += '</div>'
+            if w.get("description"):
+                html += f'<div class="ti-desc">{str(w["description"])[:200]}</div>'
+            html += '</div>'
+        html += '</div>'
+
+    if cv.education:
+        html += '<div class="profile-section"><h4>&#127891; Formación</h4>'
+        for e in cv.education[:4]:
+            html += '<div class="timeline-item">'
+            html += f'<div class="ti-title">{e.get("degree", "")}</div>'
+            html += f'<div class="ti-sub">{e.get("institution", "")}'
+            if e.get("year"):
+                html += f' &middot; {e["year"]}'
+            html += '</div></div>'
+        html += '</div>'
+
+    if cv.languages:
+        html += '<div class="profile-section"><h4>&#127760; Idiomas</h4><div class="tech-grid">'
+        for lang in cv.languages:
+            html += f'<span class="tech-badge">{lang}</span>'
+        html += '</div></div>'
+
+    if cv.certs:
+        html += '<div class="profile-section"><h4>&#127942; Certificaciones</h4><div class="tech-grid">'
+        for cert in cv.certs:
+            html += f'<span class="tech-badge">{cert}</span>'
+        html += '</div></div>'
+
+    return html
+
+
+@app.get("/profile")
+async def get_profile():
+    cv = load_cv_profile()
+    if not cv:
+        raise HTTPException(status_code=404, detail="No hay CV cargado")
+    return {
+        "full_name": cv.full_name,
+        "email": cv.email,
+        "linkedin": cv.linkedin,
+        "summary": cv.summary,
+        "experience_years": cv.experience_years,
+        "technologies": cv.technologies,
+        "skills": cv.skills,
+        "work_history": cv.work_history,
+        "education": cv.education,
+        "languages": cv.languages,
+        "certifications": cv.certs,
+    }
 
 
 if __name__ == "__main__":
