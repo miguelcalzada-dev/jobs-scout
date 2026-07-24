@@ -432,6 +432,14 @@
         .scraper-toggles { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
         .scraper-toggle-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
         .scraper-toggle-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+
+        .btn.rate-limited {
+            background: var(--warning-bg) !important;
+            color: var(--warning) !important;
+            border: 1.5px solid #fde68a;
+            cursor: not-allowed;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -943,13 +951,28 @@
         // ── Scrape with live updates ──
         var _pollingTimer = null;
 
+        var _rateLimitTimer = null;
+
         async function triggerScrape() {
             var btn = document.getElementById('btn-scrape');
+            if (_rateLimitTimer) {
+                toast('Espera ' + Math.ceil(_rateLimitSeconds) + 's antes de otra búsqueda', 'error');
+                return;
+            }
             btn.disabled = true;
             setProgress('Iniciando búsqueda...', 10);
 
             try {
                 var res = await fetch('/run', { method: 'POST' });
+                if (res.status === 429) {
+                    var errData = await res.json();
+                    var msg = errData.detail || 'Rate limit';
+                    var match = msg.match(/(\d+)s/);
+                    var waitSecs = match ? parseInt(match[1]) : 300;
+                    startRateLimit(waitSecs);
+                    toast(msg, 'error');
+                    return;
+                }
                 if (!res.ok) throw new Error('Error al iniciar');
                 setProgress('Buscando en Tecnoempleo e InfoJobs...', 25);
                 startPolling();
@@ -959,6 +982,34 @@
                 btn.innerHTML = '&#128260; Buscar ahora';
                 setProgress('', 0);
             }
+        }
+
+        var _rateLimitSeconds = 0;
+        function startRateLimit(seconds) {
+            _rateLimitSeconds = seconds;
+            var btn = document.getElementById('btn-scrape');
+            btn.disabled = true;
+            btn.classList.add('rate-limited');
+            updateRateLimitBtn();
+            _rateLimitTimer = setInterval(function() {
+                _rateLimitSeconds--;
+                if (_rateLimitSeconds <= 0) {
+                    clearInterval(_rateLimitTimer);
+                    _rateLimitTimer = null;
+                    btn.disabled = false;
+                    btn.classList.remove('rate-limited');
+                    btn.innerHTML = '&#128260; Buscar ahora';
+                    return;
+                }
+                updateRateLimitBtn();
+            }, 1000);
+        }
+
+        function updateRateLimitBtn() {
+            var btn = document.getElementById('btn-scrape');
+            var mins = Math.floor(_rateLimitSeconds / 60);
+            var secs = _rateLimitSeconds % 60;
+            btn.innerHTML = '&#9203; ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
         }
 
         function setProgress(msg, pct) {

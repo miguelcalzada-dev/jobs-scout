@@ -10,7 +10,6 @@ from typing import Optional
 from urllib.parse import urljoin
 
 import httpx
-import requests
 from bs4 import BeautifulSoup
 
 from src.config import load_preferences
@@ -115,7 +114,7 @@ class InfojobsScraper(BaseScraper):
 
         for card in cards[: self.max_offers]:
             try:
-                offer = self._parse_card(card)
+                offer = await self._parse_card(card)
                 if offer:
                     offers.append(offer)
             except Exception as e:
@@ -123,7 +122,7 @@ class InfojobsScraper(BaseScraper):
 
         return offers
 
-    def _parse_card(self, card) -> Optional[JobOffer]:
+    async def _parse_card(self, card) -> Optional[JobOffer]:
         title_el = card.select_one("h2, h3, a[class*=title], [class*=title]")
         company_el = card.select_one("[class*=company], [class*=subtitle], [class*=employer]")
         location_el = card.select_one("[class*=location], [class*=city], [class*=place]")
@@ -175,7 +174,7 @@ class InfojobsScraper(BaseScraper):
 
         description = card_text[:2000]
         if url and not description:
-            description = self._fetch_detail_description(url)
+            description = await self._fetch_detail_description(url)
 
         techs = self._detect_techs(title + " " + description)
         seniority = self._detect_seniority(title + " " + description)
@@ -223,16 +222,17 @@ class InfojobsScraper(BaseScraper):
             return "junior"
         return ""
 
-    def _fetch_detail_description(self, url: str) -> str:
+    async def _fetch_detail_description(self, url: str) -> str:
         try:
             headers = {
                 "User-Agent": random.choice(USER_AGENTS),
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
             }
-            resp = requests.get(url, headers=headers, timeout=15)
-            resp.raise_for_status()
-            soup = BeautifulSoup(resp.text, "lxml")
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, "lxml")
             desc_el = soup.select_one("[class*=description], [class*=detail], [class*=requisitos], #job-description, article")
             if desc_el:
                 return desc_el.get_text(" ", strip=True)[:5000]
