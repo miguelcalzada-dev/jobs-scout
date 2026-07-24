@@ -46,6 +46,7 @@ from src.delivery import send_daily_email
 from src.matcher import score_all_unscored_jobs
 from src.scraper import ScrapeResult, ScrapeStatus
 from src.scrapers import TecnoempleoScraper, InfojobsScraper, LinkedInScraper
+from src.autoapply import run_autoapply, get_autoapply_results
 
 logging.basicConfig(
     level=logging.INFO,
@@ -715,6 +716,7 @@ async def dashboard():
     profile_feed_html = _build_profile_feed_html(cv) if cv else ""
 
     history_json = _build_history_json()
+    autoapply_data = get_autoapply_results()
 
     template = _jinja_env.get_template("dashboard.html")
     return template.render(
@@ -727,6 +729,7 @@ async def dashboard():
         settings=settings,
         profile_feed_html=profile_feed_html,
         history_json=history_json,
+        autoapply=autoapply_data,
     )
 
 
@@ -819,6 +822,17 @@ async def get_profile():
         "languages": cv.languages,
         "certifications": cv.certs,
     }
+
+
+@app.post("/auto-apply")
+async def trigger_autoapply(min_score: int = 75):
+    task = asyncio.create_task(run_autoapply(min_score=min_score))
+    return {"status": "triggered", "min_score": min_score, "message": "Auto-apply iniciado en segundo plano"}
+
+
+@app.get("/auto-apply/status")
+async def autoapply_status():
+    return get_autoapply_results()
 
 
 if __name__ == "__main__":

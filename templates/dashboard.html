@@ -419,14 +419,13 @@
         .filter-bar label { font-size: 11px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
 
         /* ── Chart container ── */
-        .chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 18px; }
-        @media (max-width: 700px) { .chart-row { grid-template-columns: 1fr; } }
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
         .chart-box {
             background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 18px;
+            border-radius: var(--radius); padding: 14px;
             box-shadow: var(--shadow);
         }
-        .chart-box h4 { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
+        .chart-box h4 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
 
         /* ── Scraper toggles ── */
         .scraper-toggles { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -454,6 +453,7 @@
                 <a href="#cv" onclick="showTab('cv')">Mi CV</a>
                 <a href="#preferencias" onclick="showTab('preferencias')">Preferencias</a>
                 <a href="#historial" onclick="showTab('historial')">Historial</a>
+                <a href="#autoapply" onclick="showTab('autoapply')">Auto Apply</a>
             </div>
             <div class="nav-actions">
                 <span style="font-size:12px;color:var(--text-muted);font-weight:500;" id="last-run-text">{{ last_run_text }}</span>
@@ -683,11 +683,11 @@
             <div class="chart-row">
                 <div class="chart-box">
                     <h4>&#128200; Ofertas encontradas por día</h4>
-                    <canvas id="chart-offers" height="220"></canvas>
+                    <canvas id="chart-offers" height="140"></canvas>
                 </div>
                 <div class="chart-box">
-                    <h4>&#128202; Por plataforma (últimos 30 días)</h4>
-                    <canvas id="chart-sources" height="220"></canvas>
+                    <h4>&#128202; Por plataforma (últimos 7 días)</h4>
+                    <canvas id="chart-sources" height="140"></canvas>
                 </div>
             </div>
             <div class="card">
@@ -728,6 +728,66 @@
                         <p>Las ejecuciones de búsqueda aparecerán aquí.</p>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ── TAB: AUTO APPLY ── -->
+        <div id="tab-autoapply" class="page">
+            <div class="card">
+                <div class="card-header">&#129302; Auto Apply — Candidaturas automáticas en Tecnoempleo</div>
+                <div class="card-body">
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">
+                        &#128161; El sistema inicia sesión en Tecnoempleo con tus credenciales, genera una carta de presentación personalizada con IA y envía la candidatura por ti. <strong>Solo aplica en ofertas que no redirigen a webs externas.</strong>
+                    </p>
+
+                    {% if autoapply.running %}
+                    <div style="background:var(--warning-bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:18px;margin-bottom:16px;text-align:center;">
+                        <span class="spinner"></span> <strong>Auto Apply en progreso...</strong>
+                        <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Enviando candidaturas. No cierres esta página.</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="form-row" style="margin-bottom:16px;">
+                        <div class="form-group">
+                            <label>Email de Tecnoempleo</label>
+                            <input type="email" id="aa-email" placeholder="tuemail@ejemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña de Tecnoempleo</label>
+                            <input type="password" id="aa-password" placeholder="••••••••">
+                        </div>
+                    </div>
+
+                    <div class="form-row" style="margin-bottom:16px;">
+                        <div class="form-group">
+                            <label>Score mínimo para auto-aplicar</label>
+                            <select id="aa-min-score">
+                                <option value="90">90% — Solo matches excelentes</option>
+                                <option value="80">80% — Muy buenos matches</option>
+                                <option value="75" selected>75% — Buenos matches</option>
+                                <option value="70">70% — Aceptables</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-accent" onclick="startAutoApply()" id="btn-autoapply">&#129302; Iniciar Auto Apply</button>
+                    <span id="aa-status" style="margin-left:12px;font-size:13px;color:var(--text-muted);"></span>
+
+                    <div id="aa-results" style="margin-top:20px;">
+                        {% if autoapply.results %}
+                        <h4 style="font-size:13px;margin-bottom:10px;">&#128203; Últimas candidaturas ({{ autoapply.applied }}/{{ autoapply.total }} aplicadas)</h4>
+                        {% for r in autoapply.results %}
+                        <div style="padding:10px 14px;margin-bottom:8px;border-radius:8px;border:1px solid var(--border);font-size:13px;
+                            {% if r.status == 'applied' %}background:var(--success-bg);border-color:#a7f3d0;{% elif r.status == 'skipped' %}background:#f9fafb;{% else %}background:var(--danger-bg);border-color:#fecaca;{% endif %}">
+                            <strong>{% if r.status == 'applied' %}&#10003;{% elif r.status == 'skipped' %}&#10149;{% else %}&#10007;{% endif %}
+                            {{ r.title[:60] }}</strong>
+                            <span style="color:var(--text-muted);font-size:11px;">— {{ r.company }}</span>
+                            <div style="color:var(--text-muted);font-size:11px;margin-top:3px;">{{ r.detail }}</div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -1169,7 +1229,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             var hash = window.location.hash.replace('#', '');
-            if (hash && ['ofertas', 'cv', 'preferencias', 'historial'].indexOf(hash) >= 0) showTab(hash);
+            if (hash && ['ofertas', 'cv', 'preferencias', 'historial', 'autoapply'].indexOf(hash) >= 0) showTab(hash);
         });
 
         // ── Charts ──
@@ -1178,7 +1238,7 @@
 
         async function loadCharts() {
             try {
-                var res = await fetch('/stats/history?days=30');
+                var res = await fetch('/stats/history?days=7');
                 var data = await res.json();
                 var days = data.daily || [];
                 var labels = days.map(function(d){ return d.date.slice(5); });
@@ -1260,7 +1320,112 @@
             if (name === 'ofertas') {
                 setTimeout(applyFilters, 200);
             }
+            if (name === 'autoapply') {
+                loadAutoApplyStatus();
+            }
         };
+
+        // ── Auto Apply ──
+        var _aaPolling = null;
+
+        async function startAutoApply() {
+            var email = document.getElementById('aa-email').value.trim();
+            var pwd = document.getElementById('aa-password').value.trim();
+            var minScore = parseInt(document.getElementById('aa-min-score').value) || 75;
+
+            if (!email || !pwd) { toast('Introduce email y contraseña de Tecnoempleo', 'error'); return; }
+
+            var btn = document.getElementById('btn-autoapply');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Iniciando...';
+            document.getElementById('aa-status').textContent = '';
+
+            try {
+                var res = await fetch('/auto-apply?min_score=' + minScore, { method: 'POST' });
+                var data = await res.json();
+                if (data.status === 'triggered') {
+                    btn.innerHTML = '<span class="spinner"></span> Auto Apply en marcha...';
+                    document.getElementById('aa-status').textContent = 'Aplicando a ofertas de Tecnoempleo...';
+                    startAAPolling();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '&#129302; Iniciar Auto Apply';
+                    toast(data.reason || 'Error', 'error');
+                }
+            } catch(e) {
+                btn.disabled = false;
+                btn.innerHTML = '&#129302; Iniciar Auto Apply';
+                toast('Error: ' + e.message, 'error');
+            }
+        }
+
+        function startAAPolling() {
+            if (_aaPolling) clearInterval(_aaPolling);
+            var attempts = 0;
+            _aaPolling = setInterval(async function() {
+                attempts++;
+                try {
+                    var res = await fetch('/auto-apply/status');
+                    var data = await res.json();
+                    if (!data.running) {
+                        clearInterval(_aaPolling);
+                        _aaPolling = null;
+                        var btn = document.getElementById('btn-autoapply');
+                        btn.disabled = false;
+                        btn.innerHTML = '&#129302; Iniciar Auto Apply';
+                        var msg = data.applied + '/' + data.total + ' candidaturas enviadas';
+                        document.getElementById('aa-status').textContent = msg;
+                        toast('&#10003; Auto Apply completado: ' + msg, 'success');
+                        renderAAResults(data.results || []);
+                        return;
+                    }
+                    if (attempts % 5 === 0) {
+                        renderAAResults(data.results || []);
+                    }
+                    document.getElementById('aa-status').textContent = 'Procesando... ' + (data.applied || 0) + ' aplicadas';
+                } catch(e) {
+                    if (attempts > 30) {
+                        clearInterval(_aaPolling);
+                        _aaPolling = null;
+                    }
+                }
+            }, 4000);
+        }
+
+        async function loadAutoApplyStatus() {
+            try {
+                var res = await fetch('/auto-apply/status');
+                var data = await res.json();
+                if (data.results && data.results.length > 0) {
+                    renderAAResults(data.results);
+                }
+                if (data.running) {
+                    document.getElementById('btn-autoapply').disabled = true;
+                    document.getElementById('btn-autoapply').innerHTML = '<span class="spinner"></span> Auto Apply en marcha...';
+                    document.getElementById('aa-status').textContent = 'En progreso...';
+                    startAAPolling();
+                }
+            } catch(e) {}
+        }
+
+        function renderAAResults(results) {
+            var container = document.getElementById('aa-results');
+            if (!container || !results.length) return;
+            var applied = results.filter(function(r){return r.status==='applied';}).length;
+            var html = '<h4 style="font-size:13px;margin-bottom:10px;">&#128203; Últimas candidaturas (' + applied + '/' + results.length + ' aplicadas)</h4>';
+            for (var i = results.length - 1; i >= 0; i--) {
+                var r = results[i];
+                var bg = r.status === 'applied' ? 'background:var(--success-bg);border-color:#a7f3d0;' :
+                         r.status === 'skipped' ? 'background:#f9fafb;' : 'background:var(--danger-bg);border-color:#fecaca;';
+                var icon = r.status === 'applied' ? '&#10003;' : (r.status === 'skipped' ? '&#10149;' : '&#10007;');
+                html += '<div style="padding:10px 14px;margin-bottom:8px;border-radius:8px;border:1px solid var(--border);font-size:13px;' + bg + '">' +
+                    '<strong>' + icon + ' ' + esc(r.title || '').substring(0, 60) + '</strong>' +
+                    '<span style="color:var(--text-muted);font-size:11px;"> — ' + esc(r.company || '') + '</span>' +
+                    '<div style="color:var(--text-muted);font-size:11px;margin-top:3px;">' + esc(r.detail || '') + '</div>' +
+                    '</div>';
+            }
+            container.innerHTML = html;
+        }
     </script>
 </body>
 </html>

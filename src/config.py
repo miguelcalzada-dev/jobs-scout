@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     max_job_age_days: int = 3
     headless: bool = True
     tz: str = "Europe/Madrid"
+    tecnoempleo_email: str = ""
+    tecnoempleo_password: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
