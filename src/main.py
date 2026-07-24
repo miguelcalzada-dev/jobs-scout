@@ -355,6 +355,9 @@ async def upload_cv(cv_file: UploadFile = File(...)):
     try:
         profile = await parse_cv_pdf(dest)
         save_cv_profile(profile)
+
+        _auto_update_preferences_from_cv(profile)
+
         return {
             "status": "ok",
             "filename": cv_file.filename,
@@ -365,6 +368,89 @@ async def upload_cv(cv_file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Failed to parse CV: {e}")
         raise HTTPException(status_code=400, detail=f"Error al analizar el CV: {str(e)}")
+
+
+_TITULOS_POR_DEFECTO = [
+    "Desarrollador Backend", "Desarrollador Full-Stack", "Desarrollador IA",
+    "Backend Developer", "Full-Stack Developer", "AI Developer",
+    "Python Developer", "Software Engineer",
+]
+
+_TITULOS_DERIVADOS = {
+    "python": ["Python Developer", "Backend Python Developer"],
+    "django": ["Django Developer", "Python Backend Developer"],
+    "fastapi": ["FastAPI Developer", "Backend API Developer"],
+    "flask": ["Flask Developer", "Python Web Developer"],
+    "javascript": ["Full-Stack Developer", "Frontend Developer"],
+    "typescript": ["TypeScript Developer", "Full-Stack Developer"],
+    "react": ["React Developer", "Full-Stack Developer"],
+    "angular": ["Angular Developer", "Frontend Developer"],
+    "vue": ["Vue Developer", "Frontend Developer"],
+    "node.js": ["Node.js Developer", "Backend Developer"],
+    "nodejs": ["Node.js Developer", "Backend Developer"],
+    "java": ["Java Developer", "Backend Java Developer"],
+    "c#": [".NET Developer", "C# Developer"],
+    ".net": [".NET Developer", "Backend .NET Developer"],
+    "go": ["Go Developer", "Backend Go Developer"],
+    "golang": ["Go Developer", "Backend Go Developer"],
+    "rust": ["Rust Developer", "Systems Developer"],
+    "swift": ["iOS Developer", "Swift Developer"],
+    "kotlin": ["Android Developer", "Kotlin Developer"],
+    "aws": ["Cloud Engineer", "AWS Developer"],
+    "azure": ["Cloud Engineer", "Azure Developer"],
+    "gcp": ["Cloud Engineer", "GCP Developer"],
+    "docker": ["DevOps Engineer", "Cloud Developer"],
+    "kubernetes": ["DevOps Engineer", "Platform Engineer"],
+    "terraform": ["DevOps Engineer", "Infrastructure Engineer"],
+    "pytorch": ["Machine Learning Engineer", "AI Developer"],
+    "tensorflow": ["Machine Learning Engineer", "AI Developer"],
+    "machine learning": ["Machine Learning Engineer", "AI Engineer"],
+    "deep learning": ["Deep Learning Engineer", "AI Engineer"],
+    "nlp": ["NLP Engineer", "AI Developer"],
+    "spark": ["Data Engineer", "Big Data Developer"],
+    "hadoop": ["Data Engineer", "Big Data Developer"],
+    "sql": ["Database Developer", "Backend Developer"],
+    "postgresql": ["Backend Developer", "Database Developer"],
+    "mongodb": ["Backend Developer", "Database Developer"],
+    "graphql": ["Backend Developer", "API Developer"],
+    "kafka": ["Data Engineer", "Backend Developer"],
+}
+
+
+def _auto_update_preferences_from_cv(profile):
+    from src.config import JobPreferences, save_preferences
+
+    prefs = load_preferences()
+
+    if profile.technologies:
+        prefs.tech_stack = list(dict.fromkeys(profile.technologies))
+
+    if profile.experience_years:
+        years = profile.experience_years
+        if years >= 8:
+            prefs.seniority = "lead"
+        elif years >= 5:
+            prefs.seniority = "senior"
+        elif years >= 2:
+            prefs.seniority = "mid"
+        else:
+            prefs.seniority = "junior"
+
+    titulos = list(_TITULOS_POR_DEFECTO)
+    techs_lower = [t.lower() for t in profile.technologies]
+    for tech_key, derived in _TITULOS_DERIVADOS.items():
+        if tech_key in techs_lower:
+            for d in derived:
+                if d not in titulos:
+                    titulos.append(d)
+
+    prefs.desired_titles = list(dict.fromkeys(titulos))[:10]
+
+    if not prefs.location:
+        prefs.location = "España"
+
+    save_preferences(prefs)
+    logger.info(f"Preferencias auto-actualizadas desde CV: {len(prefs.tech_stack)} techs, seniority={prefs.seniority}, {len(prefs.desired_titles)} títulos")
 
 
 @app.post("/preferences")

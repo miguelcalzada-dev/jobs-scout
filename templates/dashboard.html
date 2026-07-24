@@ -3,412 +3,403 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jobs Scout - Dashboard</title>
+    <title>Jobs Scout</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
         :root {
-            --primary: #667eea;
-            --primary-dark: #5a6fd6;
-            --secondary: #764ba2;
-            --bg: #f5f7fa;
+            --primary: #7c3aed;
+            --primary-light: #a78bfa;
+            --primary-dark: #5b21b6;
+            --accent: #06b6d4;
+            --accent-light: #67e8f9;
+            --bg: #f8f7ff;
             --card-bg: #ffffff;
-            --text: #1a1a2e;
-            --text-muted: #64748b;
-            --border: #e8ecf1;
-            --success: #0d8a3a;
-            --success-bg: #e6ffed;
-            --warning: #b8760b;
-            --warning-bg: #fef3c7;
-            --danger: #e11d48;
-            --danger-bg: #ffe5ea;
+            --text: #1e1b4b;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --success: #059669;
+            --success-bg: #ecfdf5;
+            --warning: #d97706;
+            --warning-bg: #fffbeb;
+            --danger: #dc2626;
+            --danger-bg: #fef2f2;
             --linkedin: #0a66c2;
-            --infojobs: #e11d48;
-            --tecnoempleo: #065f46;
-            --radius: 10px;
-            --shadow: 0 2px 8px rgba(0,0,0,.06);
+            --infojobs: #dc143c;
+            --tecnoempleo: #059669;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+            --shadow: 0 4px 16px rgba(0,0,0,.06);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,.08);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-family: var(--font);
             background: var(--bg);
             color: var(--text);
-            line-height: 1.5;
+            line-height: 1.6;
             min-height: 100vh;
+            background-image: radial-gradient(ellipse at 0% 0%, rgba(124,58,237,.04) 0%, transparent 50%),
+                              radial-gradient(ellipse at 100% 100%, rgba(6,182,212,.04) 0%, transparent 50%);
         }
 
+        /* ── Nav ── */
         nav {
-            background: var(--card-bg);
+            background: rgba(255,255,255,.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
-            padding: 0 20px;
+            padding: 0 24px;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: var(--shadow);
         }
         .nav-inner {
-            max-width: 1100px;
+            max-width: 1140px;
             margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 56px;
+            height: 60px;
         }
-        .nav-logo {
-            font-size: 18px;
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 18px;
+            letter-spacing: -.3px;
         }
-        .nav-links { display:flex; gap:4px; }
+        .nav-brand .logo-icon {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+        }
+        .nav-links { display:flex; gap:2px; background:#f3f4f6; border-radius:10px; padding:3px; }
         .nav-links a {
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 7px 16px;
+            border-radius: 8px;
             text-decoration: none;
             color: var(--text-muted);
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             transition: all .15s;
         }
-        .nav-links a:hover, .nav-links a.active {
-            color: var(--primary);
-            background: rgba(102,126,234,.08);
-        }
-        .nav-actions { display: flex; gap:8px; align-items:center; }
+        .nav-links a:hover { color: var(--text); }
+        .nav-links a.active { background: white; color: var(--primary); box-shadow: var(--shadow-sm); }
+        .nav-actions { display:flex; gap:10px; align-items:center; }
 
-        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-
-        .page { display: none; }
+        /* ── Layout ── */
+        .container { max-width: 1140px; margin: 0 auto; padding: 28px 24px; }
+        .page { display: none; animation: fadeIn .25s ease; }
         .page.active { display: block; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
 
+        /* ── Stats ── */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
         }
+        @media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
         .stat-card {
             background: var(--card-bg);
-            padding: 18px 20px;
+            padding: 20px 18px;
             border-radius: var(--radius);
-            text-align: center;
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
+            cursor: default;
+            transition: transform .15s, box-shadow .15s;
         }
-        .stat-card .val { font-size: 26px; font-weight: 700; color: var(--primary); }
-        .stat-card .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; letter-spacing: .5px; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-card .val { font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
+        .stat-card .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 3px; letter-spacing: .6px; font-weight: 600; }
+        .stat-card:nth-child(1) .val { color: var(--primary); }
+        .stat-card:nth-child(2) .val { color: var(--accent); }
+        .stat-card:nth-child(3) .val { color: var(--success); }
+        .stat-card:nth-child(4) .val { color: #f59e0b; }
 
+        /* ── Buttons ── */
         .btn {
             display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 18px;
-            border-radius: 6px;
+            padding: 9px 20px; border-radius: var(--radius-sm);
             font-size: 13px; font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            border: none;
-            transition: all .15s;
+            text-decoration: none; cursor: pointer;
+            border: none; font-family: var(--font);
+            transition: all .15s; letter-spacing: -.1px;
         }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,.3); }
+        .btn-accent { background: var(--accent); color: white; }
+        .btn-accent:hover { background: #0891b2; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(6,182,212,.3); }
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-        .btn-sm { padding: 4px 12px; font-size: 12px; }
-        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+        .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        .btn-xs { padding: 3px 8px; font-size: 11px; border-radius:5px; }
+        .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
 
+        /* ── Cards ── */
         .card {
             background: var(--card-bg);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
-            margin-bottom: 16px;
+            margin-bottom: 18px;
             overflow: hidden;
+            transition: box-shadow .2s;
         }
+        .card:hover { box-shadow: var(--shadow-lg); }
         .card-header {
-            padding: 14px 20px;
+            padding: 16px 22px;
             border-bottom: 1px solid var(--border);
             font-weight: 700;
             font-size: 15px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            background: #fafbfe;
         }
-        .card-body { padding: 20px; }
+        .card-body { padding: 22px; }
 
+        /* ── Job Rows ── */
         .job-row {
             display: flex;
             align-items: center;
-            padding: 14px 20px;
+            padding: 16px 22px;
             border-bottom: 1px solid var(--border);
-            transition: background .1s;
-            gap: 14px;
+            transition: background .12s;
+            gap: 16px;
         }
         .job-row:last-child { border-bottom: none; }
-        .job-row:hover { background: #f8fafd; }
-        .job-score {
-            min-width: 52px;
-            text-align: center;
-            font-weight: 700;
+        .job-row:hover { background: #faf9ff; }
+        .job-score-widget {
+            min-width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
             font-size: 15px;
-            padding: 2px 6px;
-            border-radius: 20px;
-            font-size: 13px;
+            flex-shrink: 0;
+            letter-spacing: -.5px;
+            border: 3px solid;
         }
-        .score-ok { background: var(--success-bg); color: var(--success); }
-        .score-mid { background: var(--warning-bg); color: var(--warning); }
-        .score-low { background: #f1f5f9; color: var(--text-muted); }
+        .score-high { background: var(--success-bg); color: var(--success); border-color: #a7f3d0; }
+        .score-mid { background: var(--warning-bg); color: var(--warning); border-color: #fde68a; }
+        .score-low { background: #f9fafb; color: var(--text-muted); border-color: var(--border); }
         .job-info { flex:1; min-width:0; }
-        .job-title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .job-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-        .job-tech { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .job-title { font-weight: 700; font-size: 14px; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .job-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+        .job-tech { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
         .tech-tag {
-            background: #f1f5f9; color: #475569;
-            padding: 2px 7px; border-radius: 3px; font-size: 10px;
-            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: #f3f4f6; color: #4b5563;
+            padding: 3px 10px; border-radius: 20px; font-size: 11px;
+            font-family: 'SF Mono', 'Fira Code', monospace; font-weight: 500;
         }
         .source-tag {
-            color: white; padding: 2px 8px; border-radius: 3px;
-            font-size: 10px; font-weight: 600; white-space: nowrap; text-transform: uppercase;
+            color: white; padding: 3px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing:.3px;
         }
         .source-linkedin { background: var(--linkedin); }
         .source-infojobs { background: var(--infojobs); }
         .source-tecnoempleo { background: var(--tecnoempleo); }
+        .badge-remote { background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600; }
+        .badge-hybrid { background:var(--warning-bg);color:var(--warning);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600; }
 
+        /* ── Empty State ── */
         .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
+            text-align: center; padding: 70px 24px; color: var(--text-muted);
         }
-        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
-        .empty-state p { margin-bottom: 16px; }
+        .empty-state .icon { font-size: 56px; margin-bottom: 14px; opacity: .7; }
+        .empty-state h3 { font-size: 17px; margin-bottom: 6px; color: var(--text); }
+        .empty-state p { font-size: 13px; max-width: 400px; margin: 0 auto 18px; }
 
-        .form-group { margin-bottom: 16px; }
+        /* ── Forms ── */
+        .form-group { margin-bottom: 18px; }
         .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: .5px;
+            display: block; font-size: 12px; font-weight: 700;
+            color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .6px;
         }
         .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: border-color .15s;
+            width: 100%; padding: 11px 16px;
+            border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 14px; font-family: var(--font); transition: all .15s; background: #fafbfe;
         }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(102,126,234,.12);
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(124,58,237,.1); background: white;
         }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 
-        /* ── CV Profile Feed ── */
+        /* ── CV Tab ── */
         .cv-status-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 18px;
-            border-radius: var(--radius);
-            margin-bottom: 18px;
-            font-size: 14px;
-            font-weight: 600;
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px 18px; border-radius: var(--radius-sm);
+            margin-bottom: 20px; font-size: 14px; font-weight: 600;
         }
-        .cv-status-bar.loaded { background: var(--success-bg); color: var(--success); border: 1px solid #b7ebc5; }
+        .cv-status-bar.loaded { background: var(--success-bg); color: var(--success); border: 1px solid #a7f3d0; }
         .cv-status-bar.empty { background: var(--warning-bg); color: var(--warning); border: 1px solid #fde68a; }
-        .cv-status-dot {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        .cv-status-bar.loaded .cv-status-dot { background: var(--success); }
+        .cv-status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .cv-status-bar.loaded .cv-status-dot { background: var(--success); animation: pulse 2s infinite; }
         .cv-status-bar.empty .cv-status-dot { background: var(--warning); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 
         .profile-feed { display: none; }
-        .profile-feed.show { display: block; }
-
+        .profile-feed.show { display: block; animation: fadeIn .3s ease; }
         .profile-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 18px;
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 18px;
+            margin-bottom: 22px; padding-bottom: 22px;
+            border-bottom: 2px solid #f3f4f6;
         }
         .profile-avatar {
-            width: 64px; height: 64px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            font-weight: 700;
-            flex-shrink: 0;
+            width: 72px; height: 72px; border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: 800; flex-shrink: 0; letter-spacing: -.5px;
         }
-        .profile-name-box h3 { font-size: 18px; margin-bottom: 2px; }
-        .profile-name-box .email { font-size: 13px; color: var(--primary); }
+        .profile-name-box h3 { font-size: 19px; margin-bottom: 2px; letter-spacing: -.3px; }
+        .profile-name-box .subtitle { font-size: 13px; color: var(--primary); font-weight: 500; }
         .profile-name-box .linkedin-link { font-size: 12px; color: var(--text-muted); }
 
         .profile-stats-row {
-            display: flex;
-            gap: 24px;
-            margin-bottom: 18px;
-            flex-wrap: wrap;
+            display: flex; gap: 28px; margin-bottom: 20px; flex-wrap: wrap;
         }
-        .profile-stat {
-            display: flex;
-            flex-direction: column;
-        }
-        .profile-stat .ps-val { font-size: 20px; font-weight: 700; color: var(--primary); }
-        .profile-stat .ps-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+        .profile-stat .ps-val { font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: -.5px; }
+        .profile-stat .ps-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
 
-        .profile-section { margin-bottom: 18px; }
+        .profile-section { margin-bottom: 20px; }
         .profile-section h4 {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .8px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); margin-bottom: 10px; font-weight: 700;
         }
         .profile-summary {
-            font-size: 14px;
-            color: var(--text);
-            line-height: 1.6;
-            background: #f8fafd;
-            border-radius: 8px;
-            padding: 14px 16px;
+            font-size: 14px; color: var(--text); line-height: 1.7;
+            background: #fafbfe; border-radius: var(--radius-sm); padding: 16px 18px;
+            border: 1px solid #f3f4f6;
         }
-        .tech-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
+        .tech-grid { display: flex; flex-wrap: wrap; gap: 7px; }
         .tech-badge {
-            background: #eef2ff;
-            color: var(--primary);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: #eee9fe; color: var(--primary-dark);
+            padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            font-family: 'SF Mono', 'Fira Code', monospace; letter-spacing: -.2px;
         }
         .timeline-item {
-            padding: 8px 0 8px 16px;
-            border-left: 2px solid var(--border);
-            margin-left: 8px;
-            margin-bottom: 4px;
+            padding: 10px 0 10px 18px; border-left: 2px solid #e5e7eb; margin-left: 10px; margin-bottom: 2px;
         }
         .timeline-item:last-child { border-left-color: transparent; }
-        .timeline-item .ti-title { font-weight: 600; font-size: 14px; }
+        .timeline-item .ti-title { font-weight: 700; font-size: 14px; }
         .timeline-item .ti-sub { font-size: 12px; color: var(--text-muted); }
-        .timeline-item .ti-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .timeline-item .ti-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
 
         .cv-upload-zone {
-            border: 2px dashed var(--border);
-            border-radius: var(--radius);
-            padding: 36px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all .15s;
-            background: #fafbfc;
+            border: 2.5px dashed #d4d4d8; border-radius: var(--radius);
+            padding: 40px 24px; text-align: center; cursor: pointer;
+            transition: all .2s; background: #fafbfe;
         }
         .cv-upload-zone:hover, .cv-upload-zone.dragover {
-            border-color: var(--primary);
-            background: rgba(102,126,234,.04);
+            border-color: var(--primary); background: rgba(124,58,237,.03);
         }
-        .cv-upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
+        .cv-upload-zone .icon { font-size: 40px; margin-bottom: 10px; }
         .cv-upload-zone p { color: var(--text-muted); font-size: 14px; }
         .cv-upload-zone input[type=file] { display: none; }
+        .upload-section { margin-top: 24px; padding-top: 20px; border-top: 1.5px solid var(--border); }
+        .upload-section p { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
 
-        .upload-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
-        .upload-section p { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+        /* ── Scoring explainer ── */
+        .explainer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .explainer-item {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 18px;
+        }
+        .explainer-item .ei-icon { font-size: 22px; margin-bottom: 8px; }
+        .explainer-item .ei-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+        .explainer-item .ei-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 
+        /* ── Toast ── */
         .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: #1a1a2e;
-            color: white;
-            padding: 14px 24px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 999;
-            animation: slideUp .3s ease;
-            box-shadow: 0 8px 32px rgba(0,0,0,.18);
-            max-width: 400px;
-            line-height: 1.4;
+            position: fixed; bottom: 28px; right: 28px;
+            background: #1e1b4b; color: white;
+            padding: 16px 24px; border-radius: 12px; font-size: 14px; font-weight: 600;
+            z-index: 999; animation: slideUp .3s ease;
+            box-shadow: 0 12px 40px rgba(0,0,0,.2); max-width: 420px; line-height: 1.4;
         }
         .toast.success { background: var(--success); }
         .toast.error { background: var(--danger); }
-        @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+        @keyframes slideUp { from { transform: translateY(24px); opacity:0; } to { transform: translateY(0); opacity:1; } }
 
         .spinner {
-            display: inline-block;
-            width: 16px; height: 16px;
-            border: 2px solid rgba(255,255,255,.3);
-            border-top-color: white;
-            border-radius: 50%;
+            display: inline-block; width: 16px; height: 16px;
+            border: 2.5px solid rgba(255,255,255,.3);
+            border-top-color: white; border-radius: 50%;
             animation: spin .6s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .info-box {
-            background: #e0f2fe;
-            border: 1px solid #bae6fd;
-            border-radius: 6px;
-            padding: 12px 16px;
-            font-size: 13px;
-            color: #0369a1;
-            margin-bottom: 16px;
-        }
-        .warning-box {
-            background: #fef3c7;
-            border: 1px solid #fde68a;
-            border-radius: 6px;
-            padding: 12px 16px;
-            font-size: 13px;
-            color: #92400e;
-            margin-bottom: 16px;
-        }
         table.historial {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
+            width: 100%; border-collapse: collapse; font-size: 13px;
         }
         table.historial th {
-            text-align: left;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            font-size: 11px;
-            padding: 8px;
-            border-bottom: 1px solid var(--border);
+            text-align: left; color: var(--text-muted); text-transform: uppercase;
+            font-size: 11px; padding: 10px 8px; border-bottom: 2px solid var(--border);
+            font-weight: 700; letter-spacing: .5px;
         }
         table.historial td {
-            padding: 8px;
-            border-bottom: 1px solid var(--border);
+            padding: 10px 8px; border-bottom: 1px solid var(--border);
         }
+        table.historial tbody tr:hover { background: #faf9ff; }
 
-        #upload-section-new-cv { display: none; }
+        /* ── Tabs for scoring section ── */
+        .scoring-explain-box {
+            background: linear-gradient(135deg, #faf9ff, #f0f9ff);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .scoring-explain-box h4 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+        .scoring-explain-box .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .scoring-explain-box .step {
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .scoring-explain-box .step-num {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--primary); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; flex-shrink: 0;
+        }
+        .scoring-explain-box .step-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        .scoring-explain-box .step-text strong { color: var(--text); }
     </style>
 </head>
 <body>
     <nav>
         <div class="nav-inner">
-            <span class="nav-logo">&#128269; Jobs Scout</span>
+            <div class="nav-brand">
+                <div class="logo-icon">&#128269;</div>
+                Jobs Scout
+            </div>
             <div class="nav-links">
                 <a href="#ofertas" class="active" onclick="showTab('ofertas')">Ofertas</a>
                 <a href="#cv" onclick="showTab('cv')">Mi CV</a>
@@ -416,43 +407,75 @@
                 <a href="#historial" onclick="showTab('historial')">Historial</a>
             </div>
             <div class="nav-actions">
-                <span style="font-size:12px;color:var(--text-muted);" id="last-run-text">{{ last_run_text }}</span>
-                <button class="btn btn-outline btn-sm" onclick="triggerScrape()" id="btn-scrape">&#128260; Buscar ahora</button>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:500;" id="last-run-text">{{ last_run_text }}</span>
+                <button class="btn btn-accent btn-sm" onclick="triggerScrape()" id="btn-scrape">&#128260; Buscar ahora</button>
             </div>
         </div>
     </nav>
 
     <div class="container">
 
+        <!-- ── STATS ── -->
         <div class="stats-grid">
             <div class="stat-card"><div class="val">{{ stats.total_jobs }}</div><div class="lbl">Ofertas totales</div></div>
-            <div class="stat-card"><div class="val">{{ stats.scored_jobs }}</div><div class="lbl">Evaluadas</div></div>
-            <div class="stat-card"><div class="val">{{ stats.notified_jobs }}</div><div class="lbl">Recibidas</div></div>
-            <div class="stat-card"><div class="val">{{ stats.applied_jobs }}</div><div class="lbl">Aplicadas</div></div>
+            <div class="stat-card"><div class="val">{{ stats.scored_jobs }}</div><div class="lbl">Evaluadas por IA</div></div>
+            <div class="stat-card"><div class="val">{{ stats.notified_jobs }}</div><div class="lbl">Enviadas por email</div></div>
+            <div class="stat-card"><div class="val">{{ stats.applied_jobs }}</div><div class="lbl">Marcadas aplicadas</div></div>
         </div>
 
         <!-- ── TAB: OFERTAS ── -->
         <div id="tab-ofertas" class="page active">
+
+            <!-- SCORING EXPLAINER -->
+            <div class="scoring-explain-box">
+                <h4>&#128161; ¿Cómo funciona el matching de ofertas?</h4>
+                <div class="steps">
+                    <div class="step">
+                        <span class="step-num">1</span>
+                        <span class="step-text"><strong>IA semántica</strong><br>Un modelo de embeddings (sentence-transformers) compara tu CV y preferencias con cada oferta.</span>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">2</span>
+                        <span class="step-text"><strong>Puntuación por reglas</strong><br>Suma puntos por coincidencia de tecnologías, ubicación, salario, seniority y modalidad.</span>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">3</span>
+                        <span class="step-text"><strong>Penalizaciones</strong><br>Resta puntos si la oferta contiene palabras clave o sectores que quieres evitar.</span>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">4</span>
+                        <span class="step-text"><strong>Ranking final</strong><br>Combina la similitud semántica (60%) con la puntuación por reglas (40%). Resultado: 0-100%.</span>
+                    </div>
+                </div>
+                <p style="font-size:11px;color:var(--text-muted);margin-top:14px;">
+                    <strong>Verde (&ge;70%):</strong> Match excelente &middot;
+                    <strong>Ámbar (40-69%):</strong> Buen match &middot;
+                    <strong>Gris (&lt;40%):</strong> Match bajo &mdash;
+                    Cuanto más completo tu CV y preferencias, mejores resultados.
+                </p>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     &#128196; Ofertas encontradas
-                    <span style="font-size:12px;color:var(--text-muted);font-weight:400;">{{ jobs|length }} ofertas</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-weight:500;">{{ jobs|length }} ofertas</span>
                 </div>
                 {% if jobs %}
                 <div>
                     {% for job in jobs %}
                     <div class="job-row" id="job-{{ job.id }}">
-                        <span class="job-score {% if job.match_score >= 70 %}score-ok{% elif job.match_score >= 40 %}score-mid{% else %}score-low{% endif %}">
+                        <div class="job-score-widget {% if job.match_score >= 70 %}score-high{% elif job.match_score >= 40 %}score-mid{% else %}score-low{% endif %}">
                             {{ "%.0f"|format(job.match_score) }}%
-                        </span>
+                        </div>
                         <div class="job-info">
                             <div class="job-title" title="{{ job.title }}">{{ job.title }}</div>
                             <div class="job-meta">
-                                {{ job.company or '?' }} &bull; &#128205; {{ job.location or 'N/D' }}
-                                {% if job.salary %}&bull; &#128176; {{ job.salary }}{% endif %}
-                                <span class="source-tag source-{{ job.source }}" style="margin-left:6px;">{{ job.source }}</span>
-                                {% if job.remote %}<span style="background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:3px;font-size:10px;margin-left:4px;">Remoto</span>{% endif %}
-                                {% if job.hybrid %}<span style="background:var(--warning-bg);color:var(--warning);padding:1px 6px;border-radius:3px;font-size:10px;margin-left:4px;">Híbrido</span>{% endif %}
+                                {{ job.company or '?' }}
+                                <span>&#128205; {{ job.location or 'N/D' }}</span>
+                                {% if job.salary %}<span>&#128176; {{ job.salary }}</span>{% endif %}
+                                <span class="source-tag source-{{ job.source }}">{{ job.source }}</span>
+                                {% if job.remote %}<span class="badge-remote">Remoto</span>{% endif %}
+                                {% if job.hybrid %}<span class="badge-hybrid">Híbrido</span>{% endif %}
                             </div>
                             {% set techs = (job.technologies_detected or '').split(',') %}
                             {% if techs and techs[0] %}
@@ -461,9 +484,9 @@
                             </div>
                             {% endif %}
                         </div>
-                        <div style="display:flex;gap:6px;flex-shrink:0;">
-                            <a href="{{ job.url }}" target="_blank" class="btn btn-primary btn-sm">Ver</a>
-                            <button class="btn btn-success btn-sm" onclick="markApplied({{ job.id }})" title="Marcar como aplicada">&#10003;</button>
+                        <div style="display:flex;gap:8px;flex-shrink:0;">
+                            <a href="{{ job.url }}" target="_blank" class="btn btn-primary btn-sm">Ver oferta</a>
+                            <button class="btn btn-success btn-sm" onclick="markApplied({{ job.id }})" title="Marcar aplicada">&#10003;</button>
                             <button class="btn btn-danger btn-sm" onclick="markDiscarded({{ job.id }})" title="Descartar">&#10007;</button>
                         </div>
                     </div>
@@ -472,8 +495,9 @@
                 {% else %}
                 <div class="empty-state">
                     <div class="icon">&#128270;</div>
-                    <p>Aún no hay ofertas. Configura tus preferencias y sube tu CV,<br>luego haz clic en "Buscar ahora".</p>
-                    <button class="btn btn-primary" onclick="triggerScrape()">&#128260; Buscar ofertas ahora</button>
+                    <h3>Sin ofertas todavía</h3>
+                    <p>Sube tu CV en la pestaña "Mi CV" para que la IA calibre las búsquedas, luego haz clic en "Buscar ahora".</p>
+                    <button class="btn btn-accent" onclick="showTab('cv')">&#128100; Ir a Mi CV</button>
                 </div>
                 {% endif %}
             </div>
@@ -482,39 +506,39 @@
         <!-- ── TAB: MI CV ── -->
         <div id="tab-cv" class="page">
             <div class="card">
-                <div class="card-header">&#128100; Mi Perfil</div>
+                <div class="card-header">&#128100; Mi Perfil Profesional</div>
                 <div class="card-body" id="cv-card-body">
                     {% if cv and (cv.technologies or cv.summary or cv.full_name) %}
                     <div class="cv-status-bar loaded">
                         <span class="cv-status-dot"></span>
-                        CV analizado correctamente &mdash; el matching usa tu perfil para puntuar ofertas
+                        CV analizado &mdash; Preferencias actualizadas automáticamente desde tu perfil
                     </div>
                     <div class="profile-feed show" id="profile-feed">
                         {{ profile_feed_html|safe }}
                     </div>
                     <div class="upload-section">
-                        <p>¿Quieres actualizar tu CV? Sube una versión nueva:</p>
+                        <p>¿Nuevo CV? Súbelo y las preferencias se actualizarán solas:</p>
                         <form id="cv-upload-form-update" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;">
                             <input type="file" name="cv_file" accept=".pdf" id="cv-file-input-update" style="font-size:13px;">
-                            <button type="submit" class="btn btn-outline btn-sm" id="btn-upload-cv-update">&#128228; Actualizar</button>
+                            <button type="submit" class="btn btn-ghost btn-sm" id="btn-upload-cv-update">&#128228; Actualizar CV</button>
                         </form>
                     </div>
                     {% else %}
                     <div class="cv-status-bar empty">
                         <span class="cv-status-dot"></span>
-                        No hay CV cargado. Sube tu CV en PDF para mejorar drásticamente el matching.
+                        No hay CV cargado &mdash; Súbelo para desbloquear el matching inteligente
                     </div>
                     <div class="profile-feed" id="profile-feed"></div>
                     <form id="cv-upload-form" enctype="multipart/form-data">
                         <div class="cv-upload-zone" id="cv-drop-zone">
                             <div class="icon">&#128193;</div>
-                            <p>Arrastra tu CV en PDF aquí o haz clic para seleccionarlo</p>
-                            <p style="font-size:11px;color:var(--text-muted);">Solo archivos PDF</p>
+                            <p><strong>Arrastra tu CV en PDF</strong> o haz clic aquí</p>
+                            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Al subirlo, tus preferencias se configurarán automáticamente</p>
                             <input type="file" name="cv_file" accept=".pdf" id="cv-file-input">
                         </div>
                         <div id="cv-file-name" style="margin-top:10px;font-size:13px;color:var(--text-muted);"></div>
-                        <button type="submit" class="btn btn-primary" style="margin-top:12px;" id="btn-upload-cv">
-                            &#128228; Subir y analizar CV
+                        <button type="submit" class="btn btn-primary" style="margin-top:14px;" id="btn-upload-cv">
+                            &#128640; Analizar CV y configurar búsquedas
                         </button>
                     </form>
                     {% endif %}
@@ -525,16 +549,19 @@
         <!-- ── TAB: PREFERENCIAS ── -->
         <div id="tab-preferencias" class="page">
             <div class="card">
-                <div class="card-header">&#9881; Configurar preferencias de búsqueda</div>
+                <div class="card-header">&#9881; Preferencias de búsqueda</div>
                 <div class="card-body">
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">
+                        &#128161; Estas preferencias se actualizan automáticamente al subir tu CV. Puedes afinarlas aquí manualmente.
+                    </p>
                     <form id="prefs-form">
                         <div class="form-group">
                             <label>Cargos buscados (separados por comas)</label>
-                            <input type="text" name="desired_titles" value="{{ prefs.desired_titles|join(', ') }}" placeholder="Python Developer, Backend Developer">
+                            <input type="text" name="desired_titles" value="{{ prefs.desired_titles|join(', ') }}" placeholder="Desarrollador Backend, Python Developer...">
                         </div>
                         <div class="form-group">
-                            <label>Tecnologías / Stack (separadas por comas)</label>
-                            <input type="text" name="tech_stack" value="{{ prefs.tech_stack|join(', ') }}" placeholder="python, django, docker, aws, postgresql">
+                            <label>Tecnologías / Stack</label>
+                            <input type="text" name="tech_stack" value="{{ prefs.tech_stack|join(', ') }}" placeholder="python, django, docker, aws, postgresql...">
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -567,12 +594,12 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Palabras clave a EVITAR (separadas por comas)</label>
-                            <input type="text" name="exclude_keywords" value="{{ prefs.exclude_keywords|join(', ') }}" placeholder="wordpress, php, drupal">
+                            <label>Palabras clave a EVITAR</label>
+                            <input type="text" name="exclude_keywords" value="{{ prefs.exclude_keywords|join(', ') }}" placeholder="wordpress, php, drupal...">
                         </div>
                         <div class="form-group">
-                            <label>Sectores a EVITAR (separados por comas)</label>
-                            <input type="text" name="exclude_sectors" value="{{ prefs.exclude_sectors|join(', ') }}" placeholder="consulting, banking">
+                            <label>Sectores a EVITAR</label>
+                            <input type="text" name="exclude_sectors" value="{{ prefs.exclude_sectors|join(', ') }}" placeholder="consulting, banking...">
                         </div>
                         <button type="submit" class="btn btn-primary">&#128190; Guardar preferencias</button>
                     </form>
@@ -583,7 +610,7 @@
         <!-- ── TAB: HISTORIAL ── -->
         <div id="tab-historial" class="page">
             <div class="card">
-                <div class="card-header">&#128337; Historial de ejecuciones</div>
+                <div class="card-header">&#128337; Historial de búsquedas</div>
                 <div class="card-body">
                     {% if scrape_runs %}
                     <table class="historial">
@@ -616,7 +643,8 @@
                     {% else %}
                     <div class="empty-state">
                         <div class="icon">&#128337;</div>
-                        <p>No hay ejecuciones registradas todavía.</p>
+                        <h3>Sin historial</h3>
+                        <p>Las ejecuciones de búsqueda aparecerán aquí.</p>
                     </div>
                     {% endif %}
                 </div>
@@ -629,12 +657,13 @@
 
     <script>
         function showTab(name) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+            document.querySelectorAll('.nav-links a').forEach(function(a){ a.classList.remove('active'); });
             var tab = document.getElementById('tab-' + name);
             if (tab) tab.classList.add('active');
             var link = document.querySelector('.nav-links a[href="#' + name + '"]');
             if (link) link.classList.add('active');
+            window.location.hash = name;
         }
 
         function toast(msg, type) {
@@ -643,10 +672,10 @@
             t.className = 'toast ' + (type || '');
             t.style.display = 'block';
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(function(){ t.style.display = 'none'; }, 4000);
+            t._timeout = setTimeout(function(){ t.style.display = 'none'; }, 4500);
         }
 
-        // ── CV Upload (initial) ──
+        // ── CV Upload ──
         var cvZone = document.getElementById('cv-drop-zone');
         var cvInput = document.getElementById('cv-file-input');
         var cvFileName = document.getElementById('cv-file-name');
@@ -655,25 +684,16 @@
             cvZone.addEventListener('dragover', function(e){ e.preventDefault(); cvZone.classList.add('dragover'); });
             cvZone.addEventListener('dragleave', function(){ cvZone.classList.remove('dragover'); });
             cvZone.addEventListener('drop', function(e){
-                e.preventDefault();
-                cvZone.classList.remove('dragover');
-                if (e.dataTransfer.files.length) {
-                    cvInput.files = e.dataTransfer.files;
-                    cvFileName.textContent = 'Archivo: ' + e.dataTransfer.files[0].name;
-                }
+                e.preventDefault(); cvZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) { cvInput.files = e.dataTransfer.files; cvFileName.textContent = 'Archivo: ' + e.dataTransfer.files[0].name; }
             });
-            cvInput.addEventListener('change', function(){
-                cvFileName.textContent = cvInput.files.length ? 'Archivo: ' + cvInput.files[0].name : '';
-            });
-
-            document.getElementById('cv-upload-form').addEventListener('submit', handleCvUpload);
+            cvInput.addEventListener('change', function(){ cvFileName.textContent = cvInput.files.length ? 'Archivo: ' + cvInput.files[0].name : ''; });
+            var initForm = document.getElementById('cv-upload-form');
+            if (initForm) initForm.addEventListener('submit', handleCvUpload);
         }
 
-        // ── CV Upload (update) ──
-        var formUpdate = document.getElementById('cv-upload-form-update');
-        if (formUpdate) {
-            formUpdate.addEventListener('submit', handleCvUpdate);
-        }
+        var updateForm = document.getElementById('cv-upload-form-update');
+        if (updateForm) updateForm.addEventListener('submit', handleCvUpdate);
 
         async function handleCvUpload(e) {
             e.preventDefault();
@@ -696,7 +716,7 @@
             var btn = document.getElementById(btnId);
             if (!btn) return;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Analizando...';
+            btn.innerHTML = '<span class="spinner"></span> Analizando CV...';
 
             var formData = new FormData();
             formData.append('cv_file', file);
@@ -706,40 +726,37 @@
                 if (!res.ok) { var err = await res.json(); throw new Error(err.detail || 'Error'); }
                 var data = await res.json();
 
-                // Render profile feed dynamically
                 renderProfileFeed(data);
 
-                // Update status bar
                 var statusBar = document.querySelector('#tab-cv .cv-status-bar');
                 if (statusBar) {
                     statusBar.className = 'cv-status-bar loaded';
-                    statusBar.innerHTML = '<span class="cv-status-dot"></span> CV analizado correctamente &mdash; el matching usa tu perfil para puntuar ofertas';
+                    statusBar.innerHTML = '<span class="cv-status-dot"></span> CV analizado &mdash; Preferencias actualizadas automáticamente desde tu perfil';
                 }
 
-                // Hide initial upload zone, show profile + update section
-                var uploadForm = document.getElementById('cv-upload-form');
-                if (uploadForm) uploadForm.style.display = 'none';
+                var form = document.getElementById('cv-upload-form');
+                if (form) form.style.display = 'none';
 
-                var uploadSection = document.querySelector('#tab-cv .upload-section');
-                if (!uploadSection) {
-                    uploadSection = document.createElement('div');
-                    uploadSection.className = 'upload-section';
-                    uploadSection.innerHTML = '<p>¿Quieres actualizar tu CV? Sube una versión nueva:</p>' +
+                var section = document.querySelector('#tab-cv .upload-section');
+                if (!section) {
+                    section = document.createElement('div');
+                    section.className = 'upload-section';
+                    section.innerHTML = '<p>¿Nuevo CV? Súbelo y las preferencias se actualizarán solas:</p>' +
                         '<form id="cv-upload-form-update" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;">' +
                         '<input type="file" name="cv_file" accept=".pdf" id="cv-file-input-update" style="font-size:13px;">' +
-                        '<button type="submit" class="btn btn-outline btn-sm" id="btn-upload-cv-update">&#128228; Actualizar</button></form>';
-                    document.getElementById('cv-card-body').appendChild(uploadSection);
+                        '<button type="submit" class="btn btn-ghost btn-sm" id="btn-upload-cv-update">&#128228; Actualizar CV</button></form>';
+                    document.getElementById('cv-card-body').appendChild(section);
                     document.getElementById('cv-upload-form-update').addEventListener('submit', handleCvUpdate);
                 }
 
-                var techList = (data.technologies || []).slice(0, 8).join(', ');
-                toast('&#10003; CV analizado correctamente<br><small>' + techList + '</small>', 'success');
+                var techPreview = (data.technologies || []).slice(0, 8).join(', ');
+                toast('&#10003; CV analizado y preferencias actualizadas<br><small style="opacity:.8;">' + techPreview + '</small>', 'success');
             } catch (err) {
                 toast('Error: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
-                if (btnId === 'btn-upload-cv') btn.innerHTML = '&#128228; Subir y analizar CV';
-                else btn.innerHTML = '&#128228; Actualizar';
+                if (btnId === 'btn-upload-cv') btn.innerHTML = '&#128640; Analizar CV y configurar búsquedas';
+                else btn.innerHTML = '&#128228; Actualizar CV';
             }
         }
 
@@ -748,7 +765,7 @@
             if (!feed) return;
             feed.className = 'profile-feed show';
 
-            var initials = (data.full_name || 'CV').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase() || '?';
+            var initials = (data.full_name || 'CV').split(' ').slice(0,2).map(function(w){return (w[0]||'').toUpperCase();}).join('') || '?';
             var expYears = data.experience_years || 0;
             var techs = data.technologies || [];
             var workHistory = data.work_history || [];
@@ -759,9 +776,9 @@
             var html = '<div class="profile-header">';
             html += '<div class="profile-avatar">' + initials + '</div>';
             html += '<div class="profile-name-box">';
-            html += '<h3>' + escapeHtml(data.full_name || 'Perfil CV') + '</h3>';
-            if (data.email) html += '<div class="email">' + escapeHtml(data.email) + '</div>';
-            if (data.linkedin) html += '<div class="linkedin-link">' + escapeHtml(data.linkedin) + '</div>';
+            html += '<h3>' + esc(data.full_name || 'Perfil CV') + '</h3>';
+            if (data.email) html += '<div class="subtitle">' + esc(data.email) + '</div>';
+            if (data.linkedin) html += '<div class="linkedin-link">' + esc(data.linkedin) + '</div>';
             html += '</div></div>';
 
             html += '<div class="profile-stats-row">';
@@ -772,14 +789,12 @@
             html += '</div>';
 
             if (data.summary) {
-                html += '<div class="profile-section"><h4>&#128172; Resumen</h4><div class="profile-summary">' + escapeHtml(data.summary) + '</div></div>';
+                html += '<div class="profile-section"><h4>&#128172; Resumen</h4><div class="profile-summary">' + esc(data.summary).substring(0, 500) + '</div></div>';
             }
 
             if (techs.length > 0) {
                 html += '<div class="profile-section"><h4>&#128187; Tecnologías</h4><div class="tech-grid">';
-                for (var i = 0; i < techs.length; i++) {
-                    html += '<span class="tech-badge">' + escapeHtml(techs[i]) + '</span>';
-                }
+                for (var i = 0; i < techs.length; i++) html += '<span class="tech-badge">' + esc(techs[i]) + '</span>';
                 html += '</div></div>';
             }
 
@@ -787,11 +802,9 @@
                 html += '<div class="profile-section"><h4>&#128188; Experiencia</h4>';
                 for (var j = 0; j < Math.min(workHistory.length, 6); j++) {
                     var w = workHistory[j];
-                    html += '<div class="timeline-item">';
-                    html += '<div class="ti-title">' + escapeHtml(w.title || '') + '</div>';
-                    html += '<div class="ti-sub">' + escapeHtml(w.company || '') + (w.period ? ' &middot; ' + escapeHtml(w.period) : '') + '</div>';
-                    if (w.description) html += '<div class="ti-desc">' + escapeHtml(w.description).substring(0, 200) + '</div>';
-                    html += '</div>';
+                    html += '<div class="timeline-item"><div class="ti-title">' + esc(w.title || '') + '</div>';
+                    html += '<div class="ti-sub">' + esc(w.company || '') + (w.period ? ' &middot; ' + esc(w.period) : '') + '</div>';
+                    if (w.description) html += '<div class="ti-desc">' + esc(w.description).substring(0, 200) + '</div></div>';
                 }
                 html += '</div>';
             }
@@ -800,37 +813,28 @@
                 html += '<div class="profile-section"><h4>&#127891; Formación</h4>';
                 for (var k = 0; k < Math.min(education.length, 4); k++) {
                     var e = education[k];
-                    html += '<div class="timeline-item">';
-                    html += '<div class="ti-title">' + escapeHtml(e.degree || '') + '</div>';
-                    html += '<div class="ti-sub">' + escapeHtml(e.institution || '') + (e.year ? ' &middot; ' + escapeHtml(e.year) : '') + '</div>';
-                    html += '</div>';
+                    html += '<div class="timeline-item"><div class="ti-title">' + esc(e.degree || '') + '</div>';
+                    html += '<div class="ti-sub">' + esc(e.institution || '') + (e.year ? ' &middot; ' + esc(e.year) : '') + '</div></div>';
                 }
                 html += '</div>';
             }
 
             if (langs.length > 0) {
                 html += '<div class="profile-section"><h4>&#127760; Idiomas</h4><div class="tech-grid">';
-                for (var l = 0; l < langs.length; l++) {
-                    html += '<span class="tech-badge">' + escapeHtml(langs[l]) + '</span>';
-                }
+                for (var l = 0; l < langs.length; l++) html += '<span class="tech-badge">' + esc(langs[l]) + '</span>';
                 html += '</div></div>';
             }
 
             if (certs.length > 0) {
                 html += '<div class="profile-section"><h4>&#127942; Certificaciones</h4><div class="tech-grid">';
-                for (var c = 0; c < certs.length; c++) {
-                    html += '<span class="tech-badge">' + escapeHtml(certs[c]) + '</span>';
-                }
+                for (var c = 0; c < certs.length; c++) html += '<span class="tech-badge">' + esc(certs[c]) + '</span>';
                 html += '</div></div>';
             }
 
             feed.innerHTML = html;
         }
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-        }
+        function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
         // ── Preferences ──
         var prefsForm = document.getElementById('prefs-form');
@@ -838,82 +842,65 @@
             prefsForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 var form = e.target;
-
                 var data = {
-                    desired_titles: form.desired_titles.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
-                    tech_stack: form.tech_stack.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+                    desired_titles: form.desired_titles.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
+                    tech_stack: form.tech_stack.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
                     location: form.location.value,
                     min_salary: parseInt(form.min_salary.value) || 0,
                     seniority: form.seniority.value,
                     remote_only: form.modality.value === 'remote',
                     hybrid_allowed: form.modality.value === 'hybrid' || form.modality.value === 'any',
                     onsite_allowed: form.modality.value === 'any',
-                    exclude_keywords: form.exclude_keywords.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
-                    exclude_sectors: form.exclude_sectors.value.split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+                    exclude_keywords: form.exclude_keywords.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
+                    exclude_sectors: form.exclude_sectors.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
                 };
-
                 try {
-                    var res = await fetch('/preferences', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                    });
+                    var res = await fetch('/preferences', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
                     if (!res.ok) { var err = await res.json(); throw new Error(err.detail || 'Error'); }
-                    toast('&#10003; Preferencias guardadas correctamente', 'success');
-                } catch (err) {
-                    toast('Error: ' + err.message, 'error');
-                }
+                    toast('&#10003; Preferencias guardadas', 'success');
+                } catch(err) { toast('Error: ' + err.message, 'error'); }
             });
         }
 
-        // ── Scrape trigger ──
+        // ── Scrape ──
         async function triggerScrape() {
             var btn = document.getElementById('btn-scrape');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Buscando...';
             try {
                 var res = await fetch('/run', { method: 'POST' });
-                if (!res.ok) throw new Error('Error al iniciar búsqueda');
-                toast('&#128260; ¡Búsqueda iniciada! Recarga en ~30s para ver resultados.', 'success');
-                setTimeout(function(){ location.reload(); }, 25000);
-            } catch (err) {
+                if (!res.ok) throw new Error('Error al iniciar');
+                toast('&#128260; Búsqueda iniciada. Recarga en ~30s para ver resultados.', 'success');
+                setTimeout(function(){ location.reload(); }, 28000);
+            } catch(err) {
                 toast('Error: ' + err.message, 'error');
                 btn.disabled = false;
                 btn.innerHTML = '&#128260; Buscar ahora';
             }
         }
 
-        // ── Job actions ──
+        // ── Job Actions ──
         async function markApplied(id) {
             try {
-                var res = await fetch('/jobs/' + id + '/apply', { method: 'POST' });
-                if (!res.ok) throw new Error('Error');
+                await fetch('/jobs/' + id + '/apply', { method: 'POST' });
                 var row = document.getElementById('job-' + id);
-                if (row) { row.style.opacity = '0.5'; row.style.pointerEvents = 'none'; }
+                if (row) { row.style.opacity = '0.4'; row.style.pointerEvents = 'none'; }
                 toast('&#10003; Marcada como aplicada', 'success');
-            } catch (err) {
-                toast('Error al marcar', 'error');
-            }
+            } catch(err) { toast('Error al marcar', 'error'); }
         }
 
         async function markDiscarded(id) {
             try {
-                var res = await fetch('/jobs/' + id + '/discard', { method: 'POST' });
-                if (!res.ok) throw new Error('Error');
+                await fetch('/jobs/' + id + '/discard', { method: 'POST' });
                 var row = document.getElementById('job-' + id);
-                if (row) row.remove();
+                if (row) { row.style.transition = 'opacity .3s'; row.style.opacity = '0'; setTimeout(function(){ row.remove(); }, 300); }
                 toast('Oferta descartada', 'success');
-            } catch (err) {
-                toast('Error al descartar', 'error');
-            }
+            } catch(err) { toast('Error al descartar', 'error'); }
         }
 
-        // ── Init ──
         document.addEventListener('DOMContentLoaded', function() {
             var hash = window.location.hash.replace('#', '');
-            if (hash && ['ofertas', 'cv', 'preferencias', 'historial'].indexOf(hash) >= 0) {
-                showTab(hash);
-            }
+            if (hash && ['ofertas', 'cv', 'preferencias', 'historial'].indexOf(hash) >= 0) showTab(hash);
         });
     </script>
 </body>
