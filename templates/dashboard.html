@@ -794,6 +794,7 @@
                     </div>
 
                     <button class="btn btn-accent" onclick="startAutoApply()" id="btn-autoapply">&#129302; Iniciar Auto Apply</button>
+                    <button class="btn btn-ghost btn-sm" onclick="rescoreJobs()" id="btn-rescore" style="margin-left:8px;">&#128260; Re-evaluar ofertas</button>
                     <span id="aa-status" style="margin-left:12px;font-size:13px;color:var(--text-muted);"></span>
 
                     <div id="aa-results" style="margin-top:20px;">
@@ -1437,6 +1438,50 @@
                 }
                 updateAAScoreInfo();
             } catch(e) {}
+        }
+
+        async function rescoreJobs() {
+            var btn = document.getElementById('btn-rescore');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Re-evaluando...';
+            try {
+                var res = await fetch('/run', { method: 'POST' });
+                if (res.status === 429) {
+                    var errData = await res.json();
+                    toast(errData.detail || 'Espera antes de re-evaluar', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '&#128260; Re-evaluar ofertas';
+                    return;
+                }
+                toast('&#10003; Re-evaluación iniciada. Espera ~30s y recarga para ver nuevas puntuaciones.', 'success');
+                // Poll for completion
+                var attempts = 0;
+                var timer = setInterval(async function() {
+                    attempts++;
+                    try {
+                        var sres = await fetch('/auto-apply/status');
+                        var sdata = await sres.json();
+                        if (attempts > 20) {
+                            clearInterval(timer);
+                            btn.disabled = false;
+                            btn.innerHTML = '&#128260; Re-evaluar ofertas';
+                            updateAAScoreInfo();
+                            return;
+                        }
+                        if (!sdata.running && attempts > 3) {
+                            clearInterval(timer);
+                            btn.disabled = false;
+                            btn.innerHTML = '&#128260; Re-evaluar ofertas';
+                            updateAAScoreInfo();
+                            toast('&#10003; Ofertas re-evaluadas. Revisa las nuevas puntuaciones.', 'success');
+                        }
+                    } catch(e) {}
+                }, 5000);
+            } catch(e) {
+                btn.disabled = false;
+                btn.innerHTML = '&#128260; Re-evaluar ofertas';
+                toast('Error: ' + e.message, 'error');
+            }
         }
 
         async function updateAAScoreInfo() {
