@@ -3,7 +3,7 @@
   buildCommand = "pip install -r requirements.txt"
 
 [deploy]
-  startCommand = "python3 src/main.py --port ${PORT:-8080}"
+  startCommand = "python3 src/main.py --port 8080"
   healthcheckPath = "/health"
   healthcheckTimeout = 10
   restartPolicyMaxRetries = 5
@@ -13,3 +13,4 @@
 
 [variable]
   TZ = "Europe/Madrid"
+  PORT = "8080"
