@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs Scout - Dashboard</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd6;
+            --secondary: #764ba2;
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #64748b;
+            --border: #e8ecf1;
+            --success: #0d8a3a;
+            --warning: #b8760b;
+            --danger: #e11d48;
+            --linkedin: #0a66c2;
+            --infojobs: #e11d48;
+            --tecnoempleo: #065f46;
+            --radius: 10px;
+            --shadow: 0 2px 8px rgba(0,0,0,.06);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+        .nav-logo {
+            font-size: 18px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-links { display:flex; gap:4px; }
+        .nav-links a {
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all .15s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+            background: rgba(102,126,234,.08);
+        }
+        .nav-actions { display: flex; gap:8px; align-items:center; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .header-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 28px 32px;
+            border-radius: var(--radius);
+            margin-bottom: 24px;
+        }
+        .header-card h1 { font-size: 26px; margin-bottom: 4px; }
+        .header-card .last-run { opacity: .8; font-size: 13px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 18px 20px;
+            border-radius: var(--radius);
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .stat-card .val { font-size: 26px; font-weight: 700; color: var(--primary); }
+        .stat-card .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; letter-spacing: .5px; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 13px; font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all .15s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-body { padding: 20px; }
+
+        .job-row {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background .1s;
+            gap: 14px;
+        }
+        .job-row:last-child { border-bottom: none; }
+        .job-row:hover { background: #f8fafd; }
+        .job-score {
+            min-width: 52px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 2px 6px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        .score-ok { background: #e6ffed; color: var(--success); }
+        .score-mid { background: #fef3c7; color: var(--warning); }
+        .score-low { background: #f1f5f9; color: var(--text-muted); }
+        .job-info { flex:1; min-width:0; }
+        .job-title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .job-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .job-tech { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .tech-tag {
+            background: #f1f5f9; color: #475569;
+            padding: 2px 7px; border-radius: 3px; font-size: 10px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        .source-tag {
+            color: white; padding: 2px 8px; border-radius: 3px;
+            font-size: 10px; font-weight: 600; white-space: nowrap; text-transform: uppercase;
+        }
+        .source-linkedin { background: var(--linkedin); }
+        .source-infojobs { background: var(--infojobs); }
+        .source-tecnoempleo { background: var(--tecnoempleo); }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state p { margin-bottom: 16px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color .15s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102,126,234,.12);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+        .cv-upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .cv-upload-zone:hover, .cv-upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(102,126,234,.04);
+        }
+        .cv-upload-zone .icon { font-size: 40px; margin-bottom: 8px; }
+        .cv-upload-zone p { color: var(--text-muted); font-size: 14px; }
+        .cv-upload-zone input[type=file] { display: none; }
+
+        .cv-profile-card {
+            background: #f8fafd;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .cv-profile-card h3 { font-size: 15px; margin-bottom: 8px; }
+        .cv-profile-card .tech-list { display: flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1a1a2e;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 999;
+            animation: slideUp .3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,.2);
+        }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+
+        .spinner {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .info-box {
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #0369a1;
+            margin-bottom: 16px;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #92400e;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-inner">
+            <span class="nav-logo">&#128269; Jobs Scout</span>
+            <div class="nav-links">
+                <a href="#ofertas" class="active" onclick="showTab('ofertas')">Ofertas</a>
+                <a href="#cv" onclick="showTab('cv')">Mi CV</a>
+                <a href="#preferencias" onclick="showTab('preferencias')">Preferencias</a>
+                <a href="#historial" onclick="showTab('historial')">Historial</a>
+            </div>
+            <div class="nav-actions">
+                <span style="font-size:12px;color:var(--text-muted);" id="last-run-text">{{ last_run_text }}</span>
+                <button class="btn btn-outline btn-sm" onclick="triggerScrape()" id="btn-scrape">&#128260; Buscar ahora</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card"><div class="val">{{ stats.total_jobs }}</div><div class="lbl">Ofertas totales</div></div>
+            <div class="stat-card"><div class="val">{{ stats.scored_jobs }}</div><div class="lbl">Evaluadas</div></div>
+            <div class="stat-card"><div class="val">{{ stats.notified_jobs }}</div><div class="lbl">Recibidas</div></div>
+            <div class="stat-card"><div class="val">{{ stats.applied_jobs }}</div><div class="lbl">Aplicadas</div></div>
+        </div>
+
+        <!-- TAB: OFERTAS -->
+        <div id="tab-ofertas" class="page active">
+            <div class="card">
+                <div class="card-header">
+                    &#128196; Ofertas encontradas
+                    <span style="font-size:12px;color:var(--text-muted);font-weight:400;">{{ jobs|length }} ofertas</span>
+                </div>
+                {% if jobs %}
+                <div>
+                    {% for job in jobs %}
+                    <div class="job-row">
+                        <span class="job-score {% if job.match_score >= 70 %}score-ok{% elif job.match_score >= 40 %}score-mid{% else %}score-low{% endif %}">
+                            {{ "%.0f"|format(job.match_score) }}%
+                        </span>
+                        <div class="job-info">
+                            <div class="job-title" title="{{ job.title }}">{{ job.title }}</div>
+                            <div class="job-meta">
+                                {{ job.company or '?' }} &bull; &#128205; {{ job.location or 'N/D' }}
+                                {% if job.salary %}&bull; &#128176; {{ job.salary }}{% endif %}
+                                <span class="source-tag source-{{ job.source }}" style="margin-left:6px;">{{ job.source }}</span>
+                                {% if job.remote %}<span style="background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:3px;font-size:10px;margin-left:4px;">Remoto</span>{% endif %}
+                                {% if job.hybrid %}<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-size:10px;margin-left:4px;">Híbrido</span>{% endif %}
+                            </div>
+                            {% set techs = (job.technologies_detected or '').split(',') %}
+                            {% if techs and techs[0] %}
+                            <div class="job-tech">
+                                {% for t in techs[:8] %}<span class="tech-tag">{{ t }}</span>{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div style="display:flex;gap:6px;flex-shrink:0;">
+                            <a href="{{ job.url }}" target="_blank" class="btn btn-primary btn-sm">Ver</a>
+                            <button class="btn btn-success btn-sm" onclick="markApplied({{ job.id }})" title="Marcar como aplicada">&#10003;</button>
+                            <button class="btn btn-danger btn-sm" onclick="markDiscarded({{ job.id }})" title="Descartar">&#10007;</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="icon">&#128270;</div>
+                    <p>Aún no hay ofertas. Configura tus preferencias y sube tu CV,<br>luego haz clic en "Buscar ahora".</p>
+                    <button class="btn btn-primary" onclick="triggerScrape()">&#128260; Buscar ofertas ahora</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- TAB: MI CV -->
+        <div id="tab-cv" class="page">
+            <div class="card">
+                <div class="card-header">&#128196; Subir / Actualizar CV</div>
+                <div class="card-body">
+                    {% if cv %}
+                    <div class="info-box">
+                        CV cargado: <strong>{{ cv.full_name or 'CV' }}</strong> &bull;
+                        {{ cv.experience_years }} años exp. &bull;
+                        {{ cv.technologies|length }} tecnologías detectadas
+                    </div>
+                    <div class="cv-profile-card">
+                        <h3>Perfil extraído del CV</h3>
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">{{ cv.summary[:300] or 'Sin resumen' }}</p>
+                        <div class="tech-list">
+                            {% for tech in cv.technologies[:15] %}
+                            <span class="tech-tag">{{ tech }}</span>
+                            {% endfor %}
+                        </div>
+                        {% if cv.work_history %}
+                        <div style="margin-top:10px;font-size:12px;">
+                            <strong>&#128188; Experiencia:</strong>
+                            {% for w in cv.work_history[:3] %}
+                            <div style="margin-top:2px;color:var(--text-muted);">- {{ w.get('title','') }} en {{ w.get('company','') }} ({{ w.get('period','') }})</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="warning-box">
+                        &#9888; No hay CV cargado. Sube tu CV en PDF para mejorar el matching de ofertas.
+                    </div>
+                    {% endif %}
+
+                    <form id="cv-upload-form" enctype="multipart/form-data" style="margin-top:16px;">
+                        <div class="cv-upload-zone" id="cv-drop-zone">
+                            <div class="icon">&#128193;</div>
+                            <p>Arrastra tu CV en PDF aquí o haz clic para seleccionarlo</p>
+                            <p style="font-size:11px;color:var(--text-muted);">Solo archivos PDF</p>
+                            <input type="file" name="cv_file" accept=".pdf" id="cv-file-input">
+                        </div>
+                        <div id="cv-file-name" style="margin-top:8px;font-size:13px;color:var(--text-muted);"></div>
+                        <button type="submit" class="btn btn-primary" style="margin-top:12px;" id="btn-upload-cv">
+                            &#128228; Subir y analizar CV
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PREFERENCIAS -->
+        <div id="tab-preferencias" class="page">
+            <div class="card">
+                <div class="card-header">&#9881; Configurar preferencias de búsqueda</div>
+                <div class="card-body">
+                    <form id="prefs-form">
+                        <div class="form-group">
+                            <label>Cargos buscados (separados por comas)</label>
+                            <input type="text" name="desired_titles" value="{{ prefs.desired_titles|join(', ') }}" placeholder="Python Developer, Backend Developer">
+                        </div>
+                        <div class="form-group">
+                            <label>Tecnologías / Stack (separadas por comas)</label>
+                            <input type="text" name="tech_stack" value="{{ prefs.tech_stack|join(', ') }}" placeholder="python, django, docker, aws, postgresql">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Ubicación</label>
+                                <input type="text" name="location" value="{{ prefs.location }}" placeholder="Madrid, Remoto España">
+                            </div>
+                            <div class="form-group">
+                                <label>Salario mínimo anual (€)</label>
+                                <input type="number" name="min_salary" value="{{ prefs.min_salary }}" placeholder="35000">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Seniority</label>
+                                <select name="seniority">
+                                    <option value="" {% if not prefs.seniority %}selected{% endif %}>Indiferente</option>
+                                    <option value="junior" {% if prefs.seniority == 'junior' %}selected{% endif %}>Junior</option>
+                                    <option value="mid" {% if prefs.seniority == 'mid' %}selected{% endif %}>Mid</option>
+                                    <option value="senior" {% if prefs.seniority == 'senior' %}selected{% endif %}>Senior</option>
+                                    <option value="lead" {% if prefs.seniority == 'lead' %}selected{% endif %}>Lead / Manager</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Modalidad</label>
+                                <select name="modality">
+                                    <option value="any" {% if not prefs.remote_only and prefs.hybrid_allowed %}selected{% endif %}>Todas</option>
+                                    <option value="remote" {% if prefs.remote_only %}selected{% endif %}>Solo remoto</option>
+                                    <option value="hybrid" {% if prefs.hybrid_allowed and not prefs.remote_only %}selected{% endif %}>Remoto + Híbrido</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Palabras clave a EVITAR (separadas por comas)</label>
+                            <input type="text" name="exclude_keywords" value="{{ prefs.exclude_keywords|join(', ') }}" placeholder="wordpress, php, drupal">
+                        </div>
+                        <div class="form-group">
+                            <label>Sectores a EVITAR (separados por comas)</label>
+                            <input type="text" name="exclude_sectors" value="{{ prefs.exclude_sectors|join(', ') }}" placeholder="consulting, banking">
+                        </div>
+                        <button type="submit" class="btn btn-primary">&#128190; Guardar preferencias</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: HISTORIAL -->
+        <div id="tab-historial" class="page">
+            <div class="card">
+                <div class="card-header">&#128337; Historial de ejecuciones</div>
+                <div class="card-body">
+                    {% if scrape_runs %}
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--border);text-align:left;color:var(--text-muted);text-transform:uppercase;font-size:11px;">
+                                <th style="padding:8px;">Fecha</th>
+                                <th style="padding:8px;">Plataforma</th>
+                                <th style="padding:8px;">Estado</th>
+                                <th style="padding:8px;">Ofertas</th>
+                                <th style="padding:8px;">Duración</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for run in scrape_runs %}
+                            <tr style="border-bottom:1px solid var(--border);">
+                                <td style="padding:8px;">{{ run.run_date[:16] }}</td>
+                                <td style="padding:8px;">{{ run.source }}</td>
+                                <td style="padding:8px;">
+                                    {% if run.status == 'success' %}<span style="color:var(--success);">&#10003;</span>
+                                    {% elif run.status == 'partial' %}<span style="color:var(--warning);">&#9888;</span>
+                                    {% else %}<span style="color:var(--danger);">&#10007;</span>{% endif %}
+                                    {{ run.status }}
+                                </td>
+                                <td style="padding:8px;">{{ run.offers_found }}</td>
+                                <td style="padding:8px;">{{ "%.1f"|format(run.duration_seconds) }}s</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="icon">&#128337;</div>
+                        <p>No hay ejecuciones registradas todavía.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <script>
+        function showTab(name) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            document.querySelector('.nav-links a[href="#' + name + '"]').classList.add('active');
+        }
+
+        function toast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + (type || '');
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        const cvZone = document.getElementById('cv-drop-zone');
+        const cvInput = document.getElementById('cv-file-input');
+        const cvFileName = document.getElementById('cv-file-name');
+
+        cvZone.addEventListener('click', () => cvInput.click());
+        cvZone.addEventListener('dragover', (e) => { e.preventDefault(); cvZone.classList.add('dragover'); });
+        cvZone.addEventListener('dragleave', () => cvZone.classList.remove('dragover'));
+        cvZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            cvZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                cvInput.files = e.dataTransfer.files;
+                cvFileName.textContent = 'Archivo: ' + e.dataTransfer.files[0].name;
+            }
+        });
+        cvInput.addEventListener('change', () => {
+            cvFileName.textContent = cvInput.files.length ? 'Archivo: ' + cvInput.files[0].name : '';
+        });
+
+        document.getElementById('cv-upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = cvInput.files[0];
+            if (!file) { toast('Selecciona un archivo PDF', 'error'); return; }
+            if (!file.name.endsWith('.pdf')) { toast('Solo se aceptan archivos PDF', 'error'); return; }
+
+            const btn = document.getElementById('btn-upload-cv');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Analizando CV...';
+
+            const formData = new FormData();
+            formData.append('cv_file', file);
+
+            try {
+                const res = await fetch('/upload-cv', { method: 'POST', body: formData });
+                if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Error'); }
+                const data = await res.json();
+                toast('CV analizado correctamente. Tecnologías: ' + (data.technologies || []).join(', '), 'success');
+                setTimeout(() => location.reload(), 1500);
+            } catch (err) {
+                toast('Error: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '&#128228; Subir y analizar CV';
+            }
+        });
+
+        document.getElementById('prefs-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+
+            const data = {
+                desired_titles: form.desired_titles.value.split(',').map(s => s.trim()).filter(Boolean),
+                tech_stack: form.tech_stack.value.split(',').map(s => s.trim()).filter(Boolean),
+                location: form.location.value,
+                min_salary: parseInt(form.min_salary.value) || 0,
+                seniority: form.seniority.value,
+                remote_only: form.modality.value === 'remote',
+                hybrid_allowed: form.modality.value === 'hybrid' || form.modality.value === 'any',
+                onsite_allowed: form.modality.value === 'any',
+                exclude_keywords: form.exclude_keywords.value.split(',').map(s => s.trim()).filter(Boolean),
+                exclude_sectors: form.exclude_sectors.value.split(',').map(s => s.trim()).filter(Boolean),
+            };
+
+            try {
+                const res = await fetch('/preferences', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Error'); }
+                toast('Preferencias guardadas', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } catch (err) {
+                toast('Error: ' + err.message, 'error');
+            }
+        });
+
+        async function triggerScrape() {
+            const btn = document.getElementById('btn-scrape');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Buscando...';
+            try {
+                const res = await fetch('/run', { method: 'POST' });
+                if (!res.ok) throw new Error('Error al iniciar búsqueda');
+                toast('¡Búsqueda iniciada! Espera ~30 segundos y recarga.', 'success');
+                setTimeout(() => location.reload(), 20000);
+            } catch (err) {
+                toast('Error: ' + err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '&#128260; Buscar ahora';
+            }
+        }
+
+        async function markApplied(id) {
+            try {
+                await fetch('/jobs/' + id + '/apply', { method: 'POST' });
+                toast('Marcada como aplicada', 'success');
+                setTimeout(() => location.reload(), 800);
+            } catch (err) {
+                toast('Error al marcar', 'error');
+            }
+        }
+
+        async function markDiscarded(id) {
+            try {
+                await fetch('/jobs/' + id + '/discard', { method: 'POST' });
+                toast('Oferta descartada', 'success');
+                setTimeout(() => location.reload(), 800);
+            } catch (err) {
+                toast('Error al descartar', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash && ['ofertas', 'cv', 'preferencias', 'historial'].includes(hash)) {
+                showTab(hash);
+            }
+        });
+    </script>
+</body>
+</html>

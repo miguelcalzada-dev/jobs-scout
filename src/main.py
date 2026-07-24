@@ -12,16 +12,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, HTMLResponse
 
 from src.config import (
+    TEMPLATES_DIR,
     load_preferences,
+    save_preferences,
     load_cv_profile,
+    save_cv_profile,
+    load_config,
+    save_config,
     settings,
+    CVProfile,
 )
+from src.cv_parser import parse_cv_pdf
 from src.database import (
     init_db,
     bulk_insert_jobs,
@@ -31,6 +40,7 @@ from src.database import (
     cleanup_old_jobs,
     get_stats,
     log_scrape_run,
+    get_db,
 )
 from src.delivery import send_daily_email
 from src.matcher import score_all_unscored_jobs
@@ -50,6 +60,20 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 scheduler = AsyncIOScheduler(timezone=settings.tz)
 _is_running = False
 _last_run_status: dict = {"status": "idle", "last_run": None, "errors": []}
+
+_jinja_env = Environment(
+    loader=FileSystemLoader(str(TEMPLATES_DIR)),
+    autoescape=select_autoescape(["html", "xml"]),
+)
+
+
+def get_scrape_runs(limit: int = 30) -> list[dict]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM scrape_runs ORDER BY run_date DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 async def run_daily_job() -> dict:
@@ -208,7 +232,7 @@ async def lifespan(app: FastAPI):
     cv = load_cv_profile()
 
     if not cv and not prefs.tech_stack:
-        logger.warning("No CV or preferences configured. Run: python src/setup.py")
+        logger.warning("No CV or preferences configured via web dashboard")
     else:
         logger.info(f"CV loaded: {cv.full_name if cv else 'N/A'}")
         logger.info(f"Preferences: {prefs.desired_titles} | {prefs.location}")
@@ -236,7 +260,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Jobs Scout",
-    description="AI-powered daily job matching from LinkedIn, InfoJobs, and Tecnoempleo",
+    description="Buscador diario de ofertas con IA - LinkedIn, InfoJobs, Tecnoempleo",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -244,12 +268,7 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    return JSONResponse({
-        "service": "Jobs Scout",
-        "version": "1.0.0",
-        "status": "running",
-        "last_run": _last_run_status,
-    })
+    return RedirectResponse(url="/dashboard")
 
 
 @app.get("/health")
@@ -301,10 +320,10 @@ async def jobs_today():
 @app.post("/run")
 async def trigger_run():
     if _is_running:
-        raise HTTPException(status_code=429, detail="A job run is already in progress")
+        raise HTTPException(status_code=429, detail="Una búsqueda ya está en progreso")
 
     task = asyncio.create_task(run_daily_job())
-    return {"status": "triggered", "message": "Daily job search started"}
+    return {"status": "triggered", "message": "Búsqueda diaria iniciada"}
 
 
 @app.post("/jobs/{job_id}/apply")
@@ -321,101 +340,93 @@ async def mark_discarded(job_id: int):
     return {"status": "ok", "job_id": job_id, "action": "discarded"}
 
 
+@app.post("/upload-cv")
+async def upload_cv(cv_file: UploadFile = File(...)):
+    if not cv_file.filename or not cv_file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Solo se aceptan archivos PDF")
+
+    cv_dir = Path(__file__).resolve().parent.parent / "cv"
+    cv_dir.mkdir(parents=True, exist_ok=True)
+
+    dest = cv_dir / cv_file.filename
+    content = await cv_file.read()
+    dest.write_bytes(content)
+
+    try:
+        profile = await parse_cv_pdf(dest)
+        save_cv_profile(profile)
+        return {
+            "status": "ok",
+            "filename": cv_file.filename,
+            "full_name": profile.full_name,
+            "technologies": profile.technologies,
+            "experience_years": profile.experience_years,
+        }
+    except Exception as e:
+        logger.error(f"Failed to parse CV: {e}")
+        raise HTTPException(status_code=400, detail=f"Error al analizar el CV: {str(e)}")
+
+
+@app.post("/preferences")
+async def update_preferences(data: dict):
+    try:
+        from src.config import JobPreferences
+
+        prefs = load_preferences()
+
+        if "desired_titles" in data:
+            prefs.desired_titles = data["desired_titles"]
+        if "tech_stack" in data:
+            prefs.tech_stack = data["tech_stack"]
+        if "location" in data:
+            prefs.location = data["location"]
+        if "min_salary" in data:
+            prefs.min_salary = int(data["min_salary"])
+        if "seniority" in data:
+            prefs.seniority = data["seniority"]
+        if "remote_only" in data:
+            prefs.remote_only = bool(data["remote_only"])
+        if "hybrid_allowed" in data:
+            prefs.hybrid_allowed = bool(data["hybrid_allowed"])
+        if "onsite_allowed" in data:
+            prefs.onsite_allowed = bool(data["onsite_allowed"])
+        if "exclude_keywords" in data:
+            prefs.exclude_keywords = data["exclude_keywords"]
+        if "exclude_sectors" in data:
+            prefs.exclude_sectors = data["exclude_sectors"]
+
+        save_preferences(prefs)
+        return {"status": "ok", "message": "Preferencias guardadas correctamente"}
+
+    except Exception as e:
+        logger.error(f"Failed to save preferences: {e}")
+        raise HTTPException(status_code=400, detail=f"Error al guardar preferencias: {str(e)}")
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
     stats_data = get_stats()
     jobs = get_top_jobs(limit=50, days=settings.max_job_age_days)
+    cv = load_cv_profile()
+    prefs = load_preferences()
+    scrape_runs = get_scrape_runs(limit=30)
 
-    jobs_html = ""
-    for j in jobs:
-        score = j.get("match_score", 0)
-        score_color = "#0d8a3a" if score >= 70 else "#b8760b" if score >= 40 else "#64748b"
-        source_badge = {
-            "linkedin": ("LinkedIn", "#0a66c2"),
-            "infojobs": ("InfoJobs", "#e11d48"),
-            "tecnoempleo": ("Tecnoempleo", "#065f46"),
-        }.get(j.get("source", ""), (j.get("source", "?"), "#666"))
+    last_run = _last_run_status.get("last_run")
+    if last_run:
+        last_run_text = f"Última búsqueda: {last_run[:16].replace('T', ' ')}"
+    else:
+        last_run_text = "Sin búsquedas aún"
 
-        badges = ""
-        if j.get("remote"):
-            badges += '<span style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">Remoto</span>'
-        if j.get("hybrid"):
-            badges += '<span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:4px;">Híbrido</span>'
-        if j.get("sector"):
-            badges += f'<span style="background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:3px;font-size:11px;">{j["sector"]}</span>'
-
-        techs = (j.get("technologies_detected") or "").split(",")
-        techs_html = " ".join(
-            f'<span style="background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:3px;font-size:11px;">{t}</span>'
-            for t in techs[:6] if t
-        )
-
-        jobs_html += f"""
-        <div style="border:1px solid #e8ecf1;border-radius:10px;padding:16px;margin-bottom:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;">
-                <h3 style="margin:0;font-size:16px;">{j.get('title', 'N/A')}</h3>
-                <span style="color:{score_color};font-weight:700;font-size:14px;">{score:.0f}%</span>
-            </div>
-            <div style="margin:8px 0;color:#64748b;font-size:13px;">
-                {j.get('company', '')} &bull; &#128205; {j.get('location', '')}
-                <span style="background:{source_badge[1]};color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">{source_badge[0]}</span>
-            </div>
-            <div style="margin-bottom:8px;">{badges}</div>
-            <div style="margin-bottom:8px;">{techs_html}</div>
-            <div style="color:#64748b;font-size:13px;margin-bottom:8px;">&#128176; {j.get('salary') or 'No especificado'}</div>
-            <a href="{j.get('url', '#')}" target="_blank" style="display:inline-block;padding:6px 16px;background:#667eea;color:white;text-decoration:none;border-radius:5px;font-size:13px;font-weight:600;">Ver oferta &rarr;</a>
-            <a href="/jobs/{j.get('id')}/apply" style="display:inline-block;padding:6px 16px;background:#0d8a3a;color:white;text-decoration:none;border-radius:5px;font-size:13px;font-weight:600;margin-left:8px;">&#10003; Aplicada</a>
-            <a href="/jobs/{j.get('id')}/discard" style="display:inline-block;padding:6px 16px;background:#e11d48;color:white;text-decoration:none;border-radius:5px;font-size:13px;font-weight:600;margin-left:8px;">&#10007; Descartar</a>
-        </div>"""
-
-    return f"""<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jobs Scout - Dashboard</title>
-    <style>
-        * {{ margin:0; padding:0; box-sizing:border-box; }}
-        body {{ font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f5f7fa; color:#1a1a2e; padding:20px; }}
-        .container {{ max-width:800px; margin:0 auto; }}
-        .header {{ background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:24px; border-radius:12px; margin-bottom:24px; }}
-        .header h1 {{ font-size:24px; }}
-        .stats {{ display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap; }}
-        .stat-card {{ flex:1; min-width:120px; background:white; padding:16px; border-radius:10px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.06); }}
-        .stat-card .num {{ font-size:28px; font-weight:700; color:#667eea; }}
-        .stat-card .label {{ font-size:11px; color:#94a3b8; text-transform:uppercase; margin-top:4px; }}
-        .refresh-btn {{ display:inline-block;padding:8px 20px;background:#667eea;color:white;text-decoration:none;border-radius:6px;font-weight:600;margin-bottom:16px; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>&#128269; Jobs Scout Dashboard</h1>
-            <p style="opacity:.8;margin-top:4px;">&Uacute;ltima ejecuci&oacute;n: {_last_run_status.get('last_run', 'Nunca')}</p>
-        </div>
-        <div class="stats">
-            <div class="stat-card">
-                <div class="num">{stats_data['total_jobs']}</div>
-                <div class="label">Ofertas totales</div>
-            </div>
-            <div class="stat-card">
-                <div class="num">{stats_data['scored_jobs']}</div>
-                <div class="label">Evaluadas</div>
-            </div>
-            <div class="stat-card">
-                <div class="num">{stats_data['notified_jobs']}</div>
-                <div class="label">Notificadas</div>
-            </div>
-            <div class="stat-card">
-                <div class="num">{stats_data['applied_jobs']}</div>
-                <div class="label">Aplicadas</div>
-            </div>
-        </div>
-        <a href="/run" class="refresh-btn">&#128260; Forzar b&uacute;squeda ahora</a>
-        {jobs_html}
-    </div>
-</body>
-</html>"""
+    template = _jinja_env.get_template("dashboard.html")
+    return template.render(
+        stats=stats_data,
+        jobs=jobs,
+        cv=cv,
+        prefs=prefs,
+        scrape_runs=scrape_runs,
+        last_run_text=last_run_text,
+        settings=settings,
+    )
 
 
 if __name__ == "__main__":
@@ -423,15 +434,15 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Jobs Scout")
-    parser.add_argument("--run-now", action="store_true", help="Run a job search immediately and exit")
-    parser.add_argument("--port", type=int, default=settings.port, help=f"Port (default: {settings.port})")
+    parser.add_argument("--run-now", action="store_true", help="Ejecutar una búsqueda inmediata y salir")
+    parser.add_argument("--port", type=int, default=settings.port, help=f"Puerto (por defecto: {settings.port})")
     args = parser.parse_args()
 
     if args.run_now:
-        logger.info("Running manual job search...")
+        logger.info("Ejecutando búsqueda manual...")
         init_db()
         asyncio.run(run_daily_job())
-        logger.info("Manual run complete. Exiting.")
+        logger.info("Búsqueda manual completada. Saliendo.")
         sys.exit(0)
 
     uvicorn.run(app, host="0.0.0.0", port=args.port, log_level="info")
