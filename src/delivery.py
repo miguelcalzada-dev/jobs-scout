@@ -24,18 +24,14 @@ _jinja_env = Environment(
 
 async def send_daily_email(jobs: list[dict]) -> bool:
     if not settings.email_user or not settings.email_password:
-        logger.warning("Email credentials not configured, cannot send email")
+        logger.warning("Credenciales de email no configuradas")
         return False
 
     if not jobs:
-        logger.info("No jobs to send")
+        logger.info("No hay ofertas que enviar")
         return False
 
     try:
-        import aiosmtplib
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-
         prefs = load_preferences()
         cv = load_cv_profile()
 
@@ -50,6 +46,10 @@ async def send_daily_email(jobs: list[dict]) -> bool:
             cv=cv,
         )
 
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = settings.email_from or settings.email_user
@@ -59,29 +59,19 @@ async def send_daily_email(jobs: list[dict]) -> bool:
         message.attach(MIMEText(text_content, "plain", "utf-8"))
         message.attach(MIMEText(html_content, "html", "utf-8"))
 
-        logger.info(f"Enviando email a {settings.email_to}...")
+        logger.info(f"Enviando email a {settings.email_to} via SMTP_SSL:465...")
 
-        await asyncio.wait_for(
-            aiosmtplib.send(
-                message,
-                hostname=settings.email_host,
-                port=465,
-                username=settings.email_user,
-                password=settings.email_password,
-                use_tls=True,
-            ),
-            timeout=20.0,
-        )
+        def _send_sync():
+            server = smtplib.SMTP_SSL(settings.email_host, 465, timeout=15)
+            server.login(settings.email_user, settings.email_password)
+            server.send_message(message)
+            server.quit()
+
+        await asyncio.get_event_loop().run_in_executor(None, _send_sync)
 
         logger.info(f"Email enviado a {settings.email_to} con {len(jobs)} ofertas")
         return True
 
-    except ImportError:
-        logger.warning("aiosmtplib no disponible, usando smtplib")
-        return await _send_email_sync(jobs)
-    except asyncio.TimeoutError:
-        logger.error("Timeout enviando email (>20s)")
-        return False
     except Exception as e:
         logger.error(f"Failed to send email: {e}", exc_info=True)
         return False
