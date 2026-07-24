@@ -66,10 +66,12 @@ async def run_daily_job() -> dict:
         prefs = load_preferences()
         cv = load_cv_profile()
 
-        if not cv and not prefs.tech_stack:
-            raise RuntimeError(
-                "No CV or preferences found. Please run: python src/setup.py"
-            )
+        if not prefs.desired_titles:
+            prefs.desired_titles = ["python", "desarrollador", "backend"]
+            logger.info("Sin preferencias configuradas, usando búsqueda por defecto")
+        if not prefs.tech_stack:
+            prefs.tech_stack = ["python", "javascript", "docker", "sql"]
+            logger.info("Sin stack configurado, usando stack por defecto")
 
         logger.info("=" * 60)
         logger.info("DAILY JOB SEARCH STARTING")
