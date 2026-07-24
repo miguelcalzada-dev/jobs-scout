@@ -94,10 +94,11 @@ async def run_daily_job() -> dict:
 
         if not prefs.desired_titles:
             prefs.desired_titles = list(_TITULOS_POR_DEFECTO)
-            logger.info("Sin preferencias configuradas, usando búsqueda por defecto")
         if not prefs.tech_stack:
             prefs.tech_stack = list(_TECH_STACK_POR_DEFECTO)
-            logger.info("Sin stack configurado, usando stack por defecto")
+
+        for key, value in _PREFS_FIJOS.items():
+            setattr(prefs, key, value)
 
         logger.info("=" * 60)
         logger.info("DAILY JOB SEARCH STARTING")
