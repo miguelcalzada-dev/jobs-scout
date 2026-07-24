@@ -846,6 +846,17 @@ async def autoapply_status():
     return get_autoapply_results()
 
 
+@app.get("/auto-apply/eligible-count")
+async def eligible_count(min_score: int = 50):
+    with get_db() as conn:
+        cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
+        count = conn.execute(
+            "SELECT COUNT(*) FROM job_offers WHERE source = 'tecnoempleo' AND match_score >= ? AND applied = 0 AND discarded = 0 AND scrape_date >= ?",
+            (min_score, cutoff),
+        ).fetchone()[0]
+    return {"count": count, "min_score": min_score}
+
+
 if __name__ == "__main__":
     import uvicorn
     import argparse

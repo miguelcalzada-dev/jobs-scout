@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 AUTOAPPLY_RESULTS: list[dict] = []
 _autoapply_running = False
 _min_auto_score = 75
+_last_autoapply_error = ""
 
 TECNOEMPLEO_LOGIN_URL = "https://www.tecnoempleo.com/login.php"
 TECNOEMPLEO_BASE = "https://www.tecnoempleo.com"
@@ -31,10 +32,12 @@ async def run_autoapply(min_score: int = 75) -> dict:
     password = os.getenv("TECNOEMPLEO_PASSWORD", "") or settings.tecnoempleo_password
 
     if not email or not password:
-        return {"status": "error", "reason": "missing_credentials"}
+        _last_autoapply_error = "missing_credentials"
+        return {"status": "error", "reason": "missing_credentials", "hint": "Configura TECNOEMPLEO_EMAIL y TECNOEMPLEO_PASSWORD en Railway o en el formulario"}
 
     _autoapply_running = True
     _min_auto_score = min_score
+    _last_autoapply_error = ""
     AUTOAPPLY_RESULTS = []
 
     try:
@@ -95,8 +98,9 @@ async def run_autoapply(min_score: int = 75) -> dict:
 
             logged_in = await _login_tecnoempleo(page, email, password)
             if not logged_in:
+                _last_autoapply_error = "login_failed"
                 _autoapply_running = False
-                return {"status": "error", "reason": "login_failed"}
+                return {"status": "error", "reason": "login_failed", "hint": "Verifica email/contraseña de Tecnoempleo"}
 
             for job in jobs:
                 if not _autoapply_running:
@@ -151,10 +155,32 @@ async def _login_tecnoempleo(page, email: str, password: str) -> bool:
         else:
             await pass_input.press("Enter")
 
-        await page.wait_for_timeout(4000)
+        await page.wait_for_timeout(5000)
 
-        current_url = page.url
-        logged_in = "login" not in current_url.lower() and "mi-cuenta" in current_url.lower() or "/candidato" in current_url.lower() or "dashboard" in current_url.lower()
+        current_url = page.url.lower()
+        page_title = (await page.title()).lower()
+
+        logged_in = (
+            "login" not in current_url
+            or "candidato" in current_url
+            or "dashboard" in current_url
+            or "mi-cuenta" in current_url
+            or "micuenta" in current_url
+            or "panel" in current_url
+            or "cuenta" in page_title
+            or "candidato" in page_title
+        )
+
+        if not logged_in:
+            cookies = await context.cookies()
+            auth_cookies = [c for c in cookies if c.get("name", "").lower() in ("session", "tecnouser", "user", "login", "token", "phpsessid", "tecnosession")]
+            if auth_cookies:
+                logged_in = True
+
+        if not logged_in:
+            body_text = (await page.content()).lower()
+            if any(kw in body_text for kw in ["mi cuenta", "micuenta", "cerrar sesión", "cerrar sesion", "panel de control", "mis ofertas", "mis candidaturas"]):
+                logged_in = True
 
         if not logged_in:
             error_el = await page.query_selector("[class*=error], [class*=alert], .alert-danger")
@@ -439,5 +465,6 @@ def get_autoapply_results() -> dict:
         "total": len(AUTOAPPLY_RESULTS),
         "applied": sum(1 for r in AUTOAPPLY_RESULTS if r["status"] == "applied"),
         "eligible_jobs": eligible,
+        "last_error": _last_autoapply_error,
         "results": AUTOAPPLY_RESULTS[-50:],
     }

@@ -746,8 +746,19 @@
                         &#9888; No hay ofertas de Tecnoempleo puntuadas en la base de datos. <strong>Ejecuta primero una búsqueda</strong> desde la pestaña Ofertas (botón "Buscar ahora").
                     </div>
                     {% elif autoapply.eligible_jobs is defined %}
-                    <div style="background:var(--success-bg);border:1px solid #a7f3d0;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;">
-                        &#128269; <strong>{{ autoapply.eligible_jobs }}</strong> ofertas de Tecnoempleo disponibles para auto-aplicar
+                    <div style="background:var(--success-bg);border:1px solid #a7f3d0;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;" id="aa-eligible-info">
+                        &#128269; <strong><span id="aa-eligible-count">{{ autoapply.eligible_jobs }}</span></strong> ofertas de Tecnoempleo con score suficiente para auto-aplicar
+                    </div>
+                    {% endif %}
+
+                    {% if not cv or not cv.technologies %}
+                    <div style="background:var(--warning-bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;">
+                        &#9888; <strong>No tienes CV cargado.</strong> Las puntuaciones serán bajas. Sube tu CV en la pestaña "Mi CV" para mejorar el matching.
+                    </div>
+                    {% endif %}
+                    {% if autoapply.last_error %}
+                    <div style="background:var(--danger-bg);border:1px solid #fecaca;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;">
+                        &#10007; Último error: <strong>{{ autoapply.last_error }}</strong> — Revisa las credenciales
                     </div>
                     {% endif %}
 
@@ -772,11 +783,12 @@
                     <div class="form-row" style="margin-bottom:16px;">
                         <div class="form-group">
                             <label>Score mínimo para auto-aplicar</label>
-                            <select id="aa-min-score">
-                                <option value="90">90% — Solo matches excelentes</option>
-                                <option value="80">80% — Muy buenos matches</option>
-                                <option value="75" selected>75% — Buenos matches</option>
-                                <option value="70">70% — Aceptables</option>
+                            <select id="aa-min-score" onchange="updateAAScoreInfo()">
+                                <option value="80">80% — Solo matches excelentes</option>
+                                <option value="60">60% — Buenos matches</option>
+                                <option value="50" selected>50% — Aceptables</option>
+                                <option value="40">40% — Bajos (no recomendado sin CV)</option>
+                                <option value="30">30% — Muy bajos</option>
                             </select>
                         </div>
                     </div>
@@ -1388,6 +1400,10 @@
                         btn.disabled = false;
                         btn.innerHTML = '&#129302; Iniciar Auto Apply';
                         var msg = data.applied + '/' + data.total + ' candidaturas enviadas';
+                        if (data.last_error) {
+                            msg += ' — Error: ' + data.last_error;
+                            toast('&#9888; Auto Apply: ' + data.last_error, 'error');
+                        }
                         document.getElementById('aa-status').textContent = msg;
                         toast('&#10003; Auto Apply completado: ' + msg, 'success');
                         renderAAResults(data.results || []);
@@ -1418,6 +1434,30 @@
                     document.getElementById('btn-autoapply').innerHTML = '<span class="spinner"></span> Auto Apply en marcha...';
                     document.getElementById('aa-status').textContent = 'En progreso...';
                     startAAPolling();
+                }
+                updateAAScoreInfo();
+            } catch(e) {}
+        }
+
+        async function updateAAScoreInfo() {
+            var sel = document.getElementById('aa-min-score');
+            var minScore = sel ? parseInt(sel.value) : 50;
+            try {
+                var res = await fetch('/auto-apply/eligible-count?min_score=' + minScore);
+                var data = await res.json();
+                var span = document.getElementById('aa-eligible-count');
+                if (span) span.textContent = data.count;
+                var box = document.getElementById('aa-eligible-info');
+                if (box) {
+                    if (data.count === 0) {
+                        box.style.background = 'var(--warning-bg)';
+                        box.style.borderColor = '#fde68a';
+                        box.innerHTML = '&#9888; <strong>0</strong> ofertas con score >= ' + minScore + '% — baja el umbral o ejecuta una búsqueda';
+                    } else {
+                        box.style.background = 'var(--success-bg)';
+                        box.style.borderColor = '#a7f3d0';
+                        box.innerHTML = '&#128269; <strong>' + data.count + '</strong> ofertas de Tecnoempleo con score >= ' + minScore + '%';
+                    }
                 }
             } catch(e) {}
         }
