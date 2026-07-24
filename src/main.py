@@ -93,10 +93,10 @@ async def run_daily_job() -> dict:
         cv = load_cv_profile()
 
         if not prefs.desired_titles:
-            prefs.desired_titles = ["python", "desarrollador", "backend"]
+            prefs.desired_titles = list(_TITULOS_POR_DEFECTO)
             logger.info("Sin preferencias configuradas, usando búsqueda por defecto")
         if not prefs.tech_stack:
-            prefs.tech_stack = ["python", "javascript", "docker", "sql"]
+            prefs.tech_stack = list(_TECH_STACK_POR_DEFECTO)
             logger.info("Sin stack configurado, usando stack por defecto")
 
         logger.info("=" * 60)
@@ -377,8 +377,26 @@ async def upload_cv(cv_file: UploadFile = File(...)):
 _TITULOS_POR_DEFECTO = [
     "Desarrollador Backend", "Desarrollador Full-Stack", "Desarrollador IA",
     "Backend Developer", "Full-Stack Developer", "AI Developer",
-    "Python Developer", "Software Engineer",
+    "Python Developer", "Software Engineer", "Backend Python Developer", "Flask Developer",
 ]
+
+_TECH_STACK_POR_DEFECTO = [
+    "python", "typescript", "java", "react", "angular", "next.js", "node.js",
+    "flask", "spring boot", "spring", "docker", "kubernetes", "postgresql",
+    "mysql", "mongodb", "rabbitmq", "sql", "nosql", "git", "agile", "scrum",
+    "ci/cd", "microservicios", "machine learning", "deep learning", "nlp",
+]
+
+_PREFS_FIJOS = {
+    "seniority": "junior",
+    "location": "Madrid",
+    "remote_only": False,
+    "hybrid_allowed": True,
+    "onsite_allowed": False,
+    "min_salary": 0,
+    "exclude_keywords": [],
+    "exclude_sectors": [],
+}
 
 _TITULOS_DERIVADOS = {
     "python": ["Python Developer", "Backend Python Developer"],
@@ -427,34 +445,31 @@ def _auto_update_preferences_from_cv(profile):
     prefs = load_preferences()
 
     if profile.technologies:
-        prefs.tech_stack = list(dict.fromkeys(profile.technologies))
+        existing_techs = set(t.lower().strip() for t in prefs.tech_stack if t)
+        for tech in profile.technologies:
+            t_lower = tech.lower().strip()
+            if t_lower and t_lower not in existing_techs:
+                prefs.tech_stack.append(tech)
+                existing_techs.add(t_lower)
 
-    if profile.experience_years:
-        years = profile.experience_years
-        if years >= 8:
-            prefs.seniority = "lead"
-        elif years >= 5:
-            prefs.seniority = "senior"
-        elif years >= 2:
-            prefs.seniority = "mid"
-        else:
-            prefs.seniority = "junior"
+    prefs.desired_titles = list(dict.fromkeys(_TITULOS_POR_DEFECTO + prefs.desired_titles))[:15]
 
-    titulos = list(_TITULOS_POR_DEFECTO)
-    techs_lower = [t.lower() for t in profile.technologies]
-    for tech_key, derived in _TITULOS_DERIVADOS.items():
-        if tech_key in techs_lower:
-            for d in derived:
-                if d not in titulos:
-                    titulos.append(d)
+    for key, value in _PREFS_FIJOS.items():
+        setattr(prefs, key, value)
 
-    prefs.desired_titles = list(dict.fromkeys(titulos))[:10]
-
-    if not prefs.location:
-        prefs.location = "España"
+    if profile.technologies:
+        techs_lower = [t.lower() for t in profile.technologies]
+        for tech_key, derived in _TITULOS_DERIVADOS.items():
+            if tech_key in techs_lower:
+                for d in derived:
+                    if d not in _TITULOS_POR_DEFECTO and d not in prefs.desired_titles:
+                        prefs.desired_titles.append(d)
 
     save_preferences(prefs)
-    logger.info(f"Preferencias auto-actualizadas desde CV: {len(prefs.tech_stack)} techs, seniority={prefs.seniority}, {len(prefs.desired_titles)} títulos")
+    logger.info(
+        f"Preferencias actualizadas desde CV: {len(prefs.tech_stack)} techs, "
+        f"seniority={prefs.seniority}, {len(prefs.desired_titles)} títulos"
+    )
 
 
 @app.post("/preferences")
