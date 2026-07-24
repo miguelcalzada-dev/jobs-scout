@@ -862,20 +862,146 @@
             });
         }
 
-        // ── Scrape ──
+        // ── Scrape with live updates ──
+        var _pollingTimer = null;
+
         async function triggerScrape() {
             var btn = document.getElementById('btn-scrape');
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Buscando...';
+            setProgress('Iniciando búsqueda...', 10);
+
             try {
                 var res = await fetch('/run', { method: 'POST' });
                 if (!res.ok) throw new Error('Error al iniciar');
-                toast('&#128260; Búsqueda iniciada. Recarga en ~30s para ver resultados.', 'success');
-                setTimeout(function(){ location.reload(); }, 28000);
+                setProgress('Buscando en Tecnoempleo e InfoJobs...', 25);
+                startPolling();
             } catch(err) {
                 toast('Error: ' + err.message, 'error');
                 btn.disabled = false;
                 btn.innerHTML = '&#128260; Buscar ahora';
+                setProgress('', 0);
+            }
+        }
+
+        function setProgress(msg, pct) {
+            var btn = document.getElementById('btn-scrape');
+            if (pct > 0 && pct < 100) {
+                btn.innerHTML = '<span class="spinner"></span> ' + (msg || 'Buscando...');
+                btn.disabled = true;
+            } else if (pct >= 100) {
+                btn.disabled = false;
+                btn.innerHTML = '&#128260; Buscar ahora';
+                toast('&#10003; ' + (msg || 'Búsqueda completada'), 'success');
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '&#128260; Buscar ahora';
+            }
+        }
+
+        function startPolling() {
+            var attempts = 0;
+            if (_pollingTimer) clearInterval(_pollingTimer);
+
+            _pollingTimer = setInterval(async function() {
+                attempts++;
+                try {
+                    var resp = await fetch('/jobs/today');
+                    var data = await resp.json();
+
+                    if (data.count > 0 && data.jobs && data.jobs.length > 0) {
+                        renderJobList(data.jobs);
+                        setProgress(data.count + ' ofertas encontradas', 100);
+                        clearInterval(_pollingTimer);
+                        _pollingTimer = null;
+
+                        // Update stats
+                        var statsResp = await fetch('/stats');
+                        var statsData = await statsResp.json();
+                        updateStats(statsData.service_stats);
+                        return;
+                    }
+
+                    if (attempts <= 8) {
+                        setProgress('Buscando... (' + (attempts * 3) + 's)', 25 + attempts * 8);
+                    } else if (attempts <= 15) {
+                        setProgress('Puntuando ofertas...', 60 + (attempts - 8) * 5);
+                    } else {
+                        // Timeout - stop polling
+                        clearInterval(_pollingTimer);
+                        _pollingTimer = null;
+                        setProgress('Búsqueda completada. Recarga si no ves resultados.', 100);
+                    }
+                } catch(e) {
+                    if (attempts > 15) {
+                        clearInterval(_pollingTimer);
+                        _pollingTimer = null;
+                        setProgress('', 0);
+                    }
+                }
+            }, 3000);
+        }
+
+        function renderJobList(jobs) {
+            var container = document.querySelector('#tab-ofertas .card');
+            if (!container) return;
+
+            var header = container.querySelector('.card-header');
+            var existingList = container.querySelector('div:not(.card-header)');
+            if (existingList) existingList.remove();
+
+            var wrapper = document.createElement('div');
+
+            if (!jobs || jobs.length === 0) {
+                wrapper.innerHTML = '<div class="empty-state"><div class="icon">&#128270;</div><h3>Sin ofertas</h3><p>No se encontraron ofertas con estos criterios.</p></div>';
+            } else {
+                for (var i = 0; i < jobs.length; i++) {
+                    var j = jobs[i];
+                    var score = j.match_score || 0;
+                    var scoreClass = score >= 70 ? 'score-high' : (score >= 40 ? 'score-mid' : 'score-low');
+                    var techs = j.technologies || [];
+                    var techsHtml = '';
+                    for (var t = 0; t < Math.min(techs.length, 8); t++) {
+                        techsHtml += '<span class="tech-tag">' + esc(techs[t]) + '</span>';
+                    }
+
+                    var row = document.createElement('div');
+                    row.className = 'job-row';
+                    row.id = 'job-' + j.id;
+                    row.innerHTML =
+                        '<div class="job-score-widget ' + scoreClass + '">' + Math.round(score) + '%</div>' +
+                        '<div class="job-info">' +
+                            '<div class="job-title" title="' + esc(j.title) + '">' + esc(j.title) + '</div>' +
+                            '<div class="job-meta">' +
+                                esc(j.company || '?') + ' <span>&#128205; ' + esc(j.location || 'N/D') + '</span>' +
+                                (j.salary ? ' <span>&#128176; ' + esc(j.salary) + '</span>' : '') +
+                                ' <span class="source-tag source-' + j.source + '">' + j.source + '</span>' +
+                                (j.remote ? '<span class="badge-remote">Remoto</span>' : '') +
+                                (j.hybrid ? '<span class="badge-hybrid">Híbrido</span>' : '') +
+                            '</div>' +
+                            (techsHtml ? '<div class="job-tech">' + techsHtml + '</div>' : '') +
+                        '</div>' +
+                        '<div style="display:flex;gap:8px;flex-shrink:0;">' +
+                            '<a href="' + esc(j.url) + '" target="_blank" class="btn btn-primary btn-sm">Ver</a>' +
+                            '<button class="btn btn-success btn-sm" onclick="markApplied(' + j.id + ')">&#10003;</button>' +
+                            '<button class="btn btn-danger btn-sm" onclick="markDiscarded(' + j.id + ')">&#10007;</button>' +
+                        '</div>';
+                    wrapper.appendChild(row);
+                }
+            }
+
+            container.appendChild(wrapper);
+            if (header) {
+                header.innerHTML = '&#128196; Ofertas encontradas <span style="font-size:12px;color:var(--text-muted);font-weight:500;">' + (jobs ? jobs.length : 0) + ' ofertas</span>';
+            }
+        }
+
+        function updateStats(stats) {
+            var cards = document.querySelectorAll('.stats-grid .stat-card .val');
+            if (cards.length >= 4) {
+                cards[0].textContent = stats.total_jobs || 0;
+                cards[1].textContent = stats.scored_jobs || 0;
+                cards[2].textContent = stats.notified_jobs || 0;
+                cards[3].textContent = stats.applied_jobs || 0;
             }
         }
 
