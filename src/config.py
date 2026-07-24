@@ -65,6 +65,7 @@ class JobPreferences:
     company_size: str = ""
     languages: list[str] = field(default_factory=list)
     exclude_sectors: list[str] = field(default_factory=list)
+    enabled_scrapers: list[str] = field(default_factory=lambda: ["tecnoempleo", "infojobs", "linkedin"])
 
     def to_dict(self) -> dict:
         return asdict(self)

@@ -7,7 +7,7 @@ import signal
 import sys
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -44,6 +44,7 @@ from src.database import (
 )
 from src.delivery import send_daily_email
 from src.matcher import score_all_unscored_jobs
+from src.scraper import ScrapeResult, ScrapeStatus
 from src.scrapers import TecnoempleoScraper, InfojobsScraper, LinkedInScraper
 
 logging.basicConfig(
@@ -61,6 +62,16 @@ scheduler = AsyncIOScheduler(timezone=settings.tz)
 _is_running = False
 _rescore_next = False
 _last_run_status: dict = {"status": "idle", "last_run": None, "errors": []}
+_run_history: list[dict] = []
+
+_RATE_LIMIT_SECONDS = 300
+_last_trigger_time: datetime | None = None
+
+_SCRAPER_MAP = {
+    "tecnoempleo": TecnoempleoScraper,
+    "infojobs": InfojobsScraper,
+    "linkedin": LinkedInScraper,
+}
 
 _jinja_env = Environment(
     loader=FileSystemLoader(str(TEMPLATES_DIR)),
@@ -106,49 +117,67 @@ async def run_daily_job() -> dict:
         logger.info(f"  Cargos: {prefs.desired_titles}")
         logger.info("=" * 60)
 
+        scraper_classes = [
+            cls for name, cls in _SCRAPER_MAP.items()
+            if name in prefs.enabled_scrapers
+        ]
+        if not scraper_classes:
+            logger.warning("No scrapers enabled in preferences")
+            results["status"] = "completed"
+            results["error"] = "no_scrapers_enabled"
+            _is_running = False
+            return results
+
         scrapers = [
-            TecnoempleoScraper(max_offers=40, max_job_age_days=settings.max_job_age_days),
-            InfojobsScraper(max_offers=40, max_job_age_days=settings.max_job_age_days),
-            LinkedInScraper(max_offers=30, max_job_age_days=settings.max_job_age_days),
+            cls(max_offers=40, max_job_age_days=settings.max_job_age_days)
+            for cls in scraper_classes
         ]
 
-        all_offers = []
-        for scraper in scrapers:
+        async def _scrape_with_log(scraper):
             logger.info(f"Scraping {scraper.source.value}...")
             try:
                 result = await scraper.scrape()
-                results["sources"][scraper.source.value] = {
-                    "status": result.status.value,
-                    "offers": result.offers_total,
-                    "duration": round(result.duration_seconds, 1),
-                }
-                log_scrape_run(
-                    source=scraper.source.value,
-                    status=result.status.value,
-                    offers_found=result.offers_total,
-                    duration=result.duration_seconds,
-                    error=result.error or "",
-                )
-                if result.offers:
-                    inserted, skipped = bulk_insert_jobs(result.offers)
-                    logger.info(
-                        f"  {scraper.source.value}: {result.offers_total} found, "
-                        f"{inserted} new, {skipped} duplicates"
-                    )
-                    all_offers.extend(result.offers)
-                if result.error:
-                    results["errors"].append(f"{scraper.source.value}: {result.error}")
+                return scraper, result
             except Exception as e:
                 logger.error(f"Scraper {scraper.source.value} crashed: {e}", exc_info=True)
-                results["sources"][scraper.source.value] = {"status": "error", "error": str(e)}
-                results["errors"].append(f"{scraper.source.value}: {str(e)}")
-                log_scrape_run(
-                    source=scraper.source.value,
-                    status="error",
-                    offers_found=0,
-                    duration=0,
-                    error=str(e)[:500],
+                fake = ScrapeResult(
+                    source=scraper.source,
+                    status=ScrapeStatus.FAILED,
+                    error=str(e),
                 )
+                return scraper, fake
+
+        scrape_tasks = [_scrape_with_log(s) for s in scrapers]
+        scrape_results = await asyncio.gather(*scrape_tasks, return_exceptions=True)
+
+        all_offers = []
+        for item in scrape_results:
+            if isinstance(item, BaseException):
+                logger.error(f"Scraper task crashed: {item}")
+                continue
+            scraper, result = item
+            source_name = scraper.source.value
+            results["sources"][source_name] = {
+                "status": result.status.value,
+                "offers": result.offers_total,
+                "duration": round(result.duration_seconds, 1),
+            }
+            log_scrape_run(
+                source=source_name,
+                status=result.status.value,
+                offers_found=result.offers_total,
+                duration=result.duration_seconds,
+                error=result.error or "",
+            )
+            if result.offers:
+                inserted, skipped = bulk_insert_jobs(result.offers)
+                logger.info(
+                    f"  {source_name}: {result.offers_total} found, "
+                    f"{inserted} new, {skipped} duplicates"
+                )
+                all_offers.extend(result.offers)
+            if result.error:
+                results["errors"].append(f"{source_name}: {result.error}")
 
         total_found = len(all_offers)
         logger.info(f"Total offers scraped: {total_found} across all platforms")
@@ -288,7 +317,54 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    checks = {}
+
+    try:
+        with get_db() as conn:
+            conn.execute("SELECT 1").fetchone()
+        checks["database"] = "ok"
+    except Exception as e:
+        checks["database"] = f"error: {e}"
+
+    try:
+        prefs = load_preferences()
+        enabled = [s for s in prefs.enabled_scrapers if s in _SCRAPER_MAP]
+        checks["scrapers"] = {
+            "enabled": enabled,
+            "total": len(_SCRAPER_MAP),
+        }
+        checks["scrapers_enabled"] = len(enabled) > 0
+    except Exception as e:
+        checks["scrapers"] = f"error: {e}"
+        checks["scrapers_enabled"] = False
+
+    try:
+        resend_key = os.getenv("RESEND_API_KEY", "")
+        checks["email_configured"] = bool(resend_key)
+    except Exception:
+        checks["email_configured"] = False
+
+    try:
+        cv = load_cv_profile()
+        checks["cv_loaded"] = cv is not None
+    except Exception:
+        checks["cv_loaded"] = False
+
+    stats_data = get_stats()
+
+    overall = all([
+        checks.get("database") == "ok",
+        checks.get("scrapers_enabled", False),
+        checks.get("email_configured", False),
+    ])
+
+    return {
+        "status": "healthy" if overall else "degraded",
+        "checks": checks,
+        "scheduler_running": scheduler.running,
+        "last_run": _last_run_status,
+        "stats": stats_data,
+    }
 
 
 @app.get("/stats")
@@ -334,9 +410,16 @@ async def jobs_today():
 
 @app.post("/run")
 async def trigger_run():
-    global _rescore_next
+    global _rescore_next, _last_trigger_time
     if _is_running:
         raise HTTPException(status_code=429, detail="Una búsqueda ya está en progreso")
+    if _last_trigger_time and (datetime.now() - _last_trigger_time).total_seconds() < _RATE_LIMIT_SECONDS:
+        remaining = int(_RATE_LIMIT_SECONDS - (datetime.now() - _last_trigger_time).total_seconds())
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit: espera {remaining}s antes de otra ejecución manual",
+        )
+    _last_trigger_time = datetime.now()
     _rescore_next = True
     task = asyncio.create_task(run_daily_job())
     return {"status": "triggered", "message": "Búsqueda diaria iniciada"}
@@ -354,6 +437,99 @@ async def mark_discarded(job_id: int):
     from src.database import mark_as_discarded
     mark_as_discarded(job_id)
     return {"status": "ok", "job_id": job_id, "action": "discarded"}
+
+
+@app.get("/jobs/search")
+async def search_jobs(q: str = "", source: str = "", min_score: float = 0, limit: int = 100):
+    with get_db() as conn:
+        conditions = ["match_score > 0", "discarded = 0"]
+        params = []
+
+        if q:
+            conditions.append("(title LIKE ? OR company LIKE ? OR description LIKE ? OR technologies_detected LIKE ?)")
+            like = f"%{q}%"
+            params.extend([like, like, like, like])
+        if source and source in _SCRAPER_MAP:
+            conditions.append("source = ?")
+            params.append(source)
+        if min_score > 0:
+            conditions.append("match_score >= ?")
+            params.append(min_score)
+
+        cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
+        conditions.append("scrape_date >= ?")
+        params.append(cutoff)
+
+        where = " AND ".join(conditions)
+        rows = conn.execute(
+            f"SELECT * FROM job_offers WHERE {where} ORDER BY match_score DESC LIMIT ?",
+            params + [limit],
+        ).fetchall()
+
+    return {
+        "count": len(rows),
+        "jobs": [
+            {
+                "id": r["id"],
+                "source": r["source"],
+                "title": r["title"],
+                "company": r["company"],
+                "location": r["location"],
+                "url": r["url"],
+                "salary": r["salary"],
+                "match_score": round(r["match_score"], 1),
+                "remote": bool(r["remote"]),
+                "hybrid": bool(r["hybrid"]),
+                "technologies": (r["technologies_detected"] or "").split(",") if r["technologies_detected"] else [],
+                "scrape_date": r["scrape_date"],
+            }
+            for r in rows
+        ],
+    }
+
+
+@app.get("/stats/history")
+async def stats_history(days: int = 30):
+    with get_db() as conn:
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+        rows = conn.execute("""
+            SELECT run_date, source, status, offers_found
+            FROM scrape_runs
+            WHERE run_date >= ?
+            ORDER BY run_date ASC
+        """, (cutoff,)).fetchall()
+
+    from collections import defaultdict
+    daily = defaultdict(lambda: {"total": 0, "success": 0, "failed": 0})
+    for r in rows:
+        day = r["run_date"][:10]
+        daily[day]["total"] += r["offers_found"] or 0
+        if r["status"] == "success":
+            daily[day]["success"] += 1
+        else:
+            daily[day]["failed"] += 1
+
+    return {
+        "days": len(daily),
+        "daily": [{"date": d, **v} for d, v in sorted(daily.items())],
+        "raw_runs": [dict(r) for r in rows[-100:]],
+    }
+
+
+def _build_history_json() -> str:
+    try:
+        with get_db() as conn:
+            rows = conn.execute("""
+                SELECT run_date, source, status, offers_found
+                FROM scrape_runs
+                ORDER BY run_date DESC
+                LIMIT 200
+            """).fetchall()
+        runs = [dict(r) for r in rows]
+        import json as _json
+        return _json.dumps(runs, ensure_ascii=False)
+    except Exception:
+        return "[]"
 
 
 @app.post("/upload-cv")
@@ -511,6 +687,8 @@ async def update_preferences(data: dict):
             prefs.exclude_keywords = data["exclude_keywords"]
         if "exclude_sectors" in data:
             prefs.exclude_sectors = data["exclude_sectors"]
+        if "enabled_scrapers" in data:
+            prefs.enabled_scrapers = data["enabled_scrapers"]
 
         save_preferences(prefs)
         return {"status": "ok", "message": "Preferencias guardadas correctamente"}
@@ -536,6 +714,8 @@ async def dashboard():
 
     profile_feed_html = _build_profile_feed_html(cv) if cv else ""
 
+    history_json = _build_history_json()
+
     template = _jinja_env.get_template("dashboard.html")
     return template.render(
         stats=stats_data,
@@ -546,6 +726,7 @@ async def dashboard():
         last_run_text=last_run_text,
         settings=settings,
         profile_feed_html=profile_feed_html,
+        history_json=history_json,
     )
 
 

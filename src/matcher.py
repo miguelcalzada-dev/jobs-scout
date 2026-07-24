@@ -117,7 +117,12 @@ def _score_from_preferences(job: dict, prefs) -> float:
     if is_remote:
         score += 15.0
     elif is_hybrid:
-        score += 10.0
+        if prefs.remote_only:
+            score -= 35.0
+        elif not prefs.hybrid_allowed:
+            score -= 25.0
+        else:
+            score += 10.0
     elif is_onsite:
         if prefs.remote_only:
             score -= 50.0
@@ -126,7 +131,6 @@ def _score_from_preferences(job: dict, prefs) -> float:
 
     cities_found = _detect_city_from_location(job_location, job_desc)
     location_ok = prefs.location.lower() in job_location
-    location_madrid = "madrid" in job_location or "madrid" in cities_found
     location_remoto = is_remote or "remoto" in job_location or "españa" in job_location or "espana" in job_location
 
     if prefs.location:

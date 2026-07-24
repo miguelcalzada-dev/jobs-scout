@@ -27,7 +27,7 @@ RESEND_API_URL = "https://api.resend.com/emails"
 
 
 async def send_daily_email(jobs: list[dict]) -> bool:
-    if not os.getenv("RESEND_API_KEY") and not settings.email_password:
+    if not os.getenv("RESEND_API_KEY"):
         logger.warning("Resend API Key no configurada")
         return False
 

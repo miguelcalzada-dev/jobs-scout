@@ -132,6 +132,7 @@ class LinkedInScraper(BaseScraper):
         company_el = await card.query_selector("[class*=company], [class*=subtitle]")
         location_el = await card.query_selector("[class*=location], [class*=city]")
         link_el = await card.query_selector("a[href*=jobs]")
+        desc_el = await card.query_selector("[class*=description], [class*=snippet], p")
 
         if not title_el:
             return None
@@ -139,6 +140,7 @@ class LinkedInScraper(BaseScraper):
         title = (await title_el.inner_text()).strip()
         company = (await company_el.inner_text()).strip() if company_el else "No especificada"
         location = (await location_el.inner_text()).strip() if location_el else "No especificada"
+        description = (await desc_el.inner_text()).strip() if desc_el else ""
 
         url = ""
         if link_el:
@@ -148,8 +150,10 @@ class LinkedInScraper(BaseScraper):
 
         external_id = hashlib.md5((title + company + url).encode()).hexdigest()[:16]
 
-        techs = self._detect_techs(title)
+        full_text = f"{title} {description}"
+        techs = self._detect_techs(full_text)
         remote = "remote" in title.lower() or "remoto" in title.lower() or "teletrabajo" in title.lower()
+        hybrid = any(kw in full_text.lower() for kw in ["híbrido", "hibrido", "hybrid"])
 
         return JobOffer(
             source=JobSource.LINKEDIN,
@@ -158,10 +162,12 @@ class LinkedInScraper(BaseScraper):
             company=company,
             location=location,
             url=url,
-            description="",
+            description=description[:3000],
             remote=remote,
+            hybrid=hybrid,
+            onsite=not remote and not hybrid,
             technologies_detected=techs,
-            seniority_level=self._detect_seniority(title),
+            seniority_level=self._detect_seniority(full_text),
         )
 
     def _detect_techs(self, text: str) -> list[str]:

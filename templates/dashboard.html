@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jobs Scout</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -391,6 +392,46 @@
         }
         .scoring-explain-box .step-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
         .scoring-explain-box .step-text strong { color: var(--text); }
+
+        /* ── Filters ── */
+        .filter-bar {
+            display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+            padding: 14px 18px; background: var(--card-bg);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            margin-bottom: 16px;
+        }
+        .filter-bar input[type=text] {
+            flex: 1; min-width: 180px; padding: 8px 14px;
+            border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 13px; font-family: var(--font); outline: none;
+        }
+        .filter-bar input[type=text]:focus { border-color: var(--primary); }
+        .filter-bar select {
+            padding: 8px 12px; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 13px; font-family: var(--font);
+            background: white; cursor: pointer;
+        }
+        .filter-bar .filter-score {
+            width: 80px; padding: 8px 10px;
+            border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 13px; font-family: var(--font); text-align: center;
+        }
+        .filter-bar label { font-size: 11px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+
+        /* ── Chart container ── */
+        .chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 18px; }
+        @media (max-width: 700px) { .chart-row { grid-template-columns: 1fr; } }
+        .chart-box {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 18px;
+            box-shadow: var(--shadow);
+        }
+        .chart-box h4 { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
+
+        /* ── Scraper toggles ── */
+        .scraper-toggles { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
+        .scraper-toggle-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .scraper-toggle-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -455,11 +496,26 @@
                 </p>
             </div>
 
+            <div class="filter-bar">
+                <label>Buscar:</label>
+                <input type="text" id="filter-keyword" placeholder="Título, empresa, tecnología..." oninput="applyFilters()">
+                <label>Fuente:</label>
+                <select id="filter-source" onchange="applyFilters()">
+                    <option value="">Todas</option>
+                    <option value="tecnoempleo">Tecnoempleo</option>
+                    <option value="infojobs">InfoJobs</option>
+                    <option value="linkedin">LinkedIn</option>
+                </select>
+                <label>Score min:</label>
+                <input type="number" id="filter-score" class="filter-score" value="0" min="0" max="100" oninput="applyFilters()">
+            </div>
+
             <div class="card">
-                <div class="card-header">
+                <div class="card-header" id="jobs-header">
                     &#128196; Ofertas encontradas
                     <span style="font-size:12px;color:var(--text-muted);font-weight:500;">{{ jobs|length }} ofertas</span>
                 </div>
+                <div id="jobs-list">
                 {% if jobs %}
                 <div>
                     {% for job in jobs %}
@@ -500,6 +556,7 @@
                     <button class="btn btn-accent" onclick="showTab('cv')">&#128100; Ir a Mi CV</button>
                 </div>
                 {% endif %}
+                </div>
             </div>
         </div>
 
@@ -554,6 +611,12 @@
                     <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">
                         &#128161; Estas preferencias se actualizan automáticamente al subir tu CV. Puedes afinarlas aquí manualmente.
                     </p>
+                    <div class="scraper-toggles">
+                        <span style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-right:10px;">Plataformas activas:</span>
+                        <label class="scraper-toggle-item"><input type="checkbox" name="scraper_tecnoempleo" {% if 'tecnoempleo' in prefs.enabled_scrapers %}checked{% endif %}> Tecnoempleo</label>
+                        <label class="scraper-toggle-item"><input type="checkbox" name="scraper_infojobs" {% if 'infojobs' in prefs.enabled_scrapers %}checked{% endif %}> InfoJobs</label>
+                        <label class="scraper-toggle-item"><input type="checkbox" name="scraper_linkedin" {% if 'linkedin' in prefs.enabled_scrapers %}checked{% endif %}> LinkedIn</label>
+                    </div>
                     <form id="prefs-form">
                         <div class="form-group">
                             <label>Cargos buscados (separados por comas)</label>
@@ -609,6 +672,16 @@
 
         <!-- ── TAB: HISTORIAL ── -->
         <div id="tab-historial" class="page">
+            <div class="chart-row">
+                <div class="chart-box">
+                    <h4>&#128200; Ofertas encontradas por día</h4>
+                    <canvas id="chart-offers" height="220"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>&#128202; Por plataforma (últimos 30 días)</h4>
+                    <canvas id="chart-sources" height="220"></canvas>
+                </div>
+            </div>
             <div class="card">
                 <div class="card-header">&#128337; Historial de búsquedas</div>
                 <div class="card-body">
@@ -842,6 +915,10 @@
             prefsForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 var form = e.target;
+                var enabled = [];
+                if (form.scraper_tecnoempleo && form.scraper_tecnoempleo.checked) enabled.push('tecnoempleo');
+                if (form.scraper_infojobs && form.scraper_infojobs.checked) enabled.push('infojobs');
+                if (form.scraper_linkedin && form.scraper_linkedin.checked) enabled.push('linkedin');
                 var data = {
                     desired_titles: form.desired_titles.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
                     tech_stack: form.tech_stack.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
@@ -853,6 +930,7 @@
                     onsite_allowed: form.modality.value === 'any',
                     exclude_keywords: form.exclude_keywords.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
                     exclude_sectors: form.exclude_sectors.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
+                    enabled_scrapers: enabled,
                 };
                 try {
                     var res = await fetch('/preferences', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
@@ -942,18 +1020,15 @@
         }
 
         function renderJobList(jobs) {
-            var container = document.querySelector('#tab-ofertas .card');
+            var container = document.getElementById('jobs-list');
             if (!container) return;
 
-            var header = container.querySelector('.card-header');
-            var existingList = container.querySelector('div:not(.card-header)');
-            if (existingList) existingList.remove();
-
-            var wrapper = document.createElement('div');
+            var header = document.getElementById('jobs-header');
 
             if (!jobs || jobs.length === 0) {
-                wrapper.innerHTML = '<div class="empty-state"><div class="icon">&#128270;</div><h3>Sin ofertas</h3><p>No se encontraron ofertas con estos criterios.</p></div>';
+                container.innerHTML = '<div class="empty-state"><div class="icon">&#128270;</div><h3>Sin ofertas</h3><p>No se encontraron ofertas con estos criterios.</p></div>';
             } else {
+                var wrapper = document.createElement('div');
                 for (var i = 0; i < jobs.length; i++) {
                     var j = jobs[i];
                     var score = j.match_score || 0;
@@ -987,12 +1062,29 @@
                         '</div>';
                     wrapper.appendChild(row);
                 }
+                container.innerHTML = '';
+                container.appendChild(wrapper);
             }
-
-            container.appendChild(wrapper);
             if (header) {
                 header.innerHTML = '&#128196; Ofertas encontradas <span style="font-size:12px;color:var(--text-muted);font-weight:500;">' + (jobs ? jobs.length : 0) + ' ofertas</span>';
             }
+        }
+
+        async function applyFilters() {
+            var q = document.getElementById('filter-keyword').value;
+            var src = document.getElementById('filter-source').value;
+            var score = parseInt(document.getElementById('filter-score').value) || 0;
+            var params = new URLSearchParams();
+            if (q) params.set('q', q);
+            if (src) params.set('source', src);
+            if (score > 0) params.set('min_score', score);
+            params.set('limit', '100');
+
+            try {
+                var res = await fetch('/jobs/search?' + params.toString());
+                var data = await res.json();
+                renderJobList(data.jobs);
+            } catch(e) { console.error('Filter error:', e); }
         }
 
         function updateStats(stats) {
@@ -1028,6 +1120,96 @@
             var hash = window.location.hash.replace('#', '');
             if (hash && ['ofertas', 'cv', 'preferencias', 'historial'].indexOf(hash) >= 0) showTab(hash);
         });
+
+        // ── Charts ──
+        var _chartOffers = null;
+        var _chartSources = null;
+
+        async function loadCharts() {
+            try {
+                var res = await fetch('/stats/history?days=30');
+                var data = await res.json();
+                var days = data.daily || [];
+                var labels = days.map(function(d){ return d.date.slice(5); });
+                var totals = days.map(function(d){ return d.total; });
+
+                var ctx1 = document.getElementById('chart-offers');
+                if (ctx1) {
+                    if (_chartOffers) _chartOffers.destroy();
+                    _chartOffers = new Chart(ctx1, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Ofertas',
+                                data: totals,
+                                backgroundColor: 'rgba(124,58,237,0.6)',
+                                borderColor: '#7c3aed',
+                                borderWidth: 1,
+                                borderRadius: 6,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { font: { size: 11 } }, grid: { color: '#f3f4f6' } },
+                                x: { ticks: { font: { size: 10 }, maxRotation: 45 } }
+                            }
+                        }
+                    });
+                }
+
+                var runs = data.raw_runs || [];
+                var sourceCounts = {};
+                for (var i = 0; i < runs.length; i++) {
+                    var s = runs[i].source || 'unknown';
+                    sourceCounts[s] = (sourceCounts[s] || 0) + (runs[i].offers_found || 0);
+                }
+                var srcLabels = Object.keys(sourceCounts);
+                var srcData = srcLabels.map(function(k){ return sourceCounts[k]; });
+                var srcColors = { tecnoempleo: '#059669', infojobs: '#dc143c', linkedin: '#0a66c2' };
+
+                var ctx2 = document.getElementById('chart-sources');
+                if (ctx2) {
+                    if (_chartSources) _chartSources.destroy();
+                    _chartSources = new Chart(ctx2, {
+                        type: 'doughnut',
+                        data: {
+                            labels: srcLabels,
+                            datasets: [{
+                                data: srcData,
+                                backgroundColor: srcLabels.map(function(l){ return srcColors[l] || '#9ca3af'; }),
+                                borderWidth: 2,
+                                borderColor: '#fff',
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { font: { size: 11 }, padding: 16, usePointStyle: true }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch(e) { console.error('Chart error:', e); }
+        }
+
+        var _origShowTab = showTab;
+        showTab = function(name) {
+            _origShowTab(name);
+            if (name === 'historial') {
+                setTimeout(loadCharts, 200);
+            }
+            if (name === 'ofertas') {
+                setTimeout(applyFilters, 200);
+            }
+        };
     </script>
 </body>
 </html>

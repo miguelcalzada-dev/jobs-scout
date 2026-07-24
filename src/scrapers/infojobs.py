@@ -10,6 +10,7 @@ from typing import Optional
 from urllib.parse import urljoin
 
 import httpx
+import requests
 from bs4 import BeautifulSoup
 
 from src.config import load_preferences
@@ -172,8 +173,12 @@ class InfojobsScraper(BaseScraper):
         if sal_match:
             salary = sal_match.group(1)
 
-        techs = self._detect_techs(title + " " + card_text)
-        seniority = self._detect_seniority(title + " " + card_text)
+        description = card_text[:2000]
+        if url and not description:
+            description = self._fetch_detail_description(url)
+
+        techs = self._detect_techs(title + " " + description)
+        seniority = self._detect_seniority(title + " " + description)
 
         contract_type = ""
         if "indefinido" in card_text:
@@ -188,7 +193,7 @@ class InfojobsScraper(BaseScraper):
             company=company or "No especificada",
             location=location or "No especificada",
             url=url,
-            description=card_text[:2000],
+            description=description,
             salary=salary,
             contract_type=contract_type,
             remote=remote,
@@ -217,3 +222,21 @@ class InfojobsScraper(BaseScraper):
         if any(kw in text_lower for kw in ["junior", "jr.", "entry", "becario", "prácticas", "trainee", "sin experiencia"]):
             return "junior"
         return ""
+
+    def _fetch_detail_description(self, url: str) -> str:
+        try:
+            headers = {
+                "User-Agent": random.choice(USER_AGENTS),
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+            }
+            resp = requests.get(url, headers=headers, timeout=15)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, "lxml")
+            desc_el = soup.select_one("[class*=description], [class*=detail], [class*=requisitos], #job-description, article")
+            if desc_el:
+                return desc_el.get_text(" ", strip=True)[:5000]
+            body_text = soup.body.get_text(" ", strip=True) if soup.body else ""
+            return body_text[:5000]
+        except Exception:
+            return ""

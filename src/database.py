@@ -131,13 +131,49 @@ def insert_job(job: JobOffer) -> bool:
 
 
 def bulk_insert_jobs(jobs: list[JobOffer]) -> tuple[int, int]:
-    inserted = 0
-    skipped = 0
-    for job in jobs:
-        if insert_job(job):
-            inserted += 1
-        else:
-            skipped += 1
+    if not jobs:
+        return 0, 0
+    with get_db() as conn:
+        before = conn.execute("SELECT COUNT(*) FROM job_offers").fetchone()[0]
+        data = [
+            (
+                job.source.value,
+                job.external_id,
+                job.title,
+                job.company,
+                job.location,
+                job.url,
+                job.description[:10000],
+                job.description_html,
+                job.salary,
+                job.salary_min,
+                job.salary_max,
+                job.contract_type,
+                1 if job.remote else 0,
+                1 if job.hybrid else 0,
+                1 if job.onsite else 0,
+                job.published_date,
+                job.scrape_date,
+                ",".join(job.technologies_detected),
+                job.seniority_level,
+                job.company_size,
+                job.sector,
+                str(job.raw_data) if job.raw_data else "{}",
+            )
+            for job in jobs
+        ]
+        conn.executemany(
+            "INSERT OR IGNORE INTO job_offers "
+            "(source, external_id, title, company, location, url, description, "
+            "description_html, salary, salary_min, salary_max, contract_type, "
+            "remote, hybrid, onsite, published_date, scrape_date, "
+            "technologies_detected, seniority_level, company_size, sector, raw_data) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            data,
+        )
+        after = conn.execute("SELECT COUNT(*) FROM job_offers").fetchone()[0]
+    inserted = after - before
+    skipped = len(jobs) - inserted
     return inserted, skipped
 
 
@@ -232,7 +268,7 @@ def cleanup_old_jobs(retention_days: int = 30) -> int:
     with get_db() as conn:
         cutoff = (datetime.now() - timedelta(days=retention_days)).isoformat()
         cursor = conn.execute(
-            "DELETE FROM job_offers WHERE scrape_date < ? AND notified = 1 AND applied = 0",
+            "DELETE FROM job_offers WHERE scrape_date < ?",
             (cutoff,),
         )
         return cursor.rowcount

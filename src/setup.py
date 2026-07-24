@@ -64,14 +64,18 @@ async def run_setup() -> None:
 
     config = load_config()
 
-    email_user = Prompt.ask(
-        "Email de Gmail para envío",
-        default=config.get("email_user", settings.email_user or ""),
-    )
-    email_password = Prompt.ask(
-        "App Password de Gmail (https://myaccount.google.com/apppasswords)",
+    resend_key = Prompt.ask(
+        "API Key de Resend (https://resend.com/api-keys)",
         password=True,
-        default=config.get("email_password", ""),
+        default=config.get("resend_api_key", os.getenv("RESEND_API_KEY", "")),
+    )
+    if resend_key:
+        os.environ["RESEND_API_KEY"] = resend_key
+        config["resend_api_key"] = resend_key
+
+    email_user = Prompt.ask(
+        "Email remitente (debe ser un dominio verificado en Resend)",
+        default=config.get("email_user", settings.email_user or "onboarding@resend.dev"),
     )
     email_to = Prompt.ask(
         "Email donde recibir las ofertas",
@@ -79,28 +83,26 @@ async def run_setup() -> None:
     )
 
     config["email_user"] = email_user
-    config["email_password"] = email_password
     config["email_to"] = email_to
     config["email_from"] = f"Jobs Scout <{email_user}>"
 
     send_hour = IntPrompt.ask(
         "Hora del día para recibir ofertas (formato 24h)",
-        default=config.get("daily_send_hour", 9),
+        default=config.get("daily_send_hour", 20),
     )
     config["daily_send_hour"] = send_hour
 
     save_config(config)
 
-    if email_user and email_password:
-        with console.status("Probando conexión de email..."):
+    if resend_key:
+        with console.status("Probando conexión de email (Resend)..."):
             os.environ["EMAIL_USER"] = email_user
-            os.environ["EMAIL_PASSWORD"] = email_password
             os.environ["EMAIL_TO"] = email_to
             ok = await test_email_connection()
         if ok:
             console.print("[green]✓[/green] Conexión de email verificada")
         else:
-            console.print("[yellow]⚠[/yellow] No se pudo verificar el email. Verifica las credenciales.")
+            console.print("[yellow]⚠[/yellow] No se pudo verificar el email. Verifica tu API key de Resend.")
 
     console.print("\n[bold]Paso 2 de 3:[/bold] Sube tu CV en PDF\n")
 
