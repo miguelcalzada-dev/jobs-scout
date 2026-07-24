@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #1a1a2e;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px 24px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            margin: 8px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .body {
+            background: white;
+            padding: 24px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        .job-card {
+            border: 1px solid #e8ecf1;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: box-shadow 0.2s;
+        }
+        .job-card:hover {
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+            border-color: #667eea;
+        }
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .job-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin: 0;
+            flex: 1;
+        }
+        .job-score {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f0f5ff;
+            color: #667eea;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .score-high {
+            background: #e6ffed;
+            color: #0d8a3a;
+        }
+        .score-mid {
+            background: #fff8e6;
+            color: #b8760b;
+        }
+        .job-meta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .job-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-remote { background: #e0f2fe; color: #0369a1; }
+        .badge-hybrid { background: #fef3c7; color: #92400e; }
+        .badge-senior { background: #f3e8ff; color: #7c3aed; }
+        .badge-linkedin { background: #e0f2fe; color: #0a66c2; }
+        .badge-infojobs { background: #fff1f2; color: #e11d48; }
+        .badge-tecnoempleo { background: #ecfdf5; color: #065f46; }
+        .job-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .tech-tag {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        .job-link {
+            display: inline-block;
+            margin-top: 14px;
+            padding: 8px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .job-link:hover {
+            background: #5a6fd6;
+        }
+        .job-match-reason {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #64748b;
+            font-style: italic;
+        }
+        .footer {
+            text-align: center;
+            padding: 24px 16px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .stats-box {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            padding: 16px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>&#128269; Jobs Scout</h1>
+            <p>Las mejores ofertas para ti &bull; {{ date }}</p>
+        </div>
+        <div class="body">
+            <div class="stats-box">
+                <div class="stat">
+                    <div class="stat-value">{{ jobs|length }}</div>
+                    <div class="stat-label">Ofertas hoy</div>
+                </div>
+            </div>
+
+            {% for job in jobs %}
+            <div class="job-card">
+                <div class="job-header">
+                    <h3 class="job-title">{{ job.title }}</h3>
+                    {% set score = job.match_score|float %}
+                    <span class="job-score {% if score >= 70 %}score-high{% elif score >= 40 %}score-mid{% endif %}">
+                        {{ '%d'|format(score) }}% match
+                    </span>
+                </div>
+                <div class="job-meta">
+                    <span>{{ job.company }}</span>
+                    <span>&#x1F4CD; {{ job.location }}</span>
+                    {% if job.seniority_level %}
+                    <span class="badge badge-senior">{{ job.seniority_level }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if job.remote %}
+                    <span class="badge badge-remote">Remoto</span>
+                    {% endif %}
+                    {% if job.hybrid %}
+                    <span class="badge badge-hybrid">H&iacute;brido</span>
+                    {% endif %}
+                    {% if job.source == 'linkedin' %}
+                    <span class="badge badge-linkedin">LinkedIn</span>
+                    {% elif job.source == 'infojobs' %}
+                    <span class="badge badge-infojobs">InfoJobs</span>
+                    {% else %}
+                    <span class="badge badge-tecnoempleo">Tecnoempleo</span>
+                    {% endif %}
+                </div>
+                {% set techs = (job.technologies_detected or '').split(',') %}
+                {% if techs and techs[0] %}
+                <div class="job-tech">
+                    {% for tech in techs[:6] %}
+                    <span class="tech-tag">{{ tech }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if job.salary %}
+                <div class="job-match-reason">&#x1F4B0; {{ job.salary }}</div>
+                {% endif %}
+                <a href="{{ job.url }}" class="job-link" target="_blank">Ver oferta &rarr;</a>
+            </div>
+            {% endfor %}
+
+            {% if not jobs %}
+            <p style="text-align:center; color:#94a3b8; padding: 40px 0;">
+                No se encontraron ofertas relevantes hoy. Seguiremos buscando ma&ntilde;ana.
+            </p>
+            {% endif %}
+        </div>
+        <div class="footer">
+            Jobs Scout &bull; Actualizado cada d&iacute;a autom&aacute;ticamente<br>
+            {% if settings.email_to %}Enviado a {{ settings.email_to }}{% endif %}
+        </div>
+    </div>
+</body>
+</html>

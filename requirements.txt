@@ -1,0 +1,38 @@
+# Core
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+jinja2>=3.1.0
+
+# Database
+aiosqlite>=0.20.0
+
+# CV Parsing
+pdfplumber>=0.10.0
+
+# Web Scraping
+httpx>=0.27.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+playwright>=1.45.0
+
+# Job Matching (embeddings, similarity)
+sentence-transformers>=3.0.0
+scikit-learn>=1.5.0
+numpy>=2.0.0
+
+# LLM (optional, for CV parsing)
+litellm>=1.40.0
+
+# Email Delivery
+aiosmtplib>=3.0.0
+
+# Scheduling
+apscheduler>=3.10.0
+
+# Monitoring / Health
+rich>=13.0.0

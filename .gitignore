@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+config.yaml
+cv_profile.json
+data/jobs.db
+data/jobs.db-wal
+data/jobs.db-shm
+*.pid
+.DS_Store
+cv/*.pdf
+chromium/

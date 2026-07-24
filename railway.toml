@@ -1,0 +1,21 @@
+[build]
+  builder = "nixpacks"
+
+[build.environment]
+  PYTHON_VERSION = "3.12"
+
+[deploy]
+  startCommand = "python src/main.py --port ${PORT:-8080}"
+  healthcheckPath = "/health"
+  healthcheckTimeout = 10
+  restartPolicyMaxRetries = 5
+
+[service]
+  name = "jobs-scout"
+
+[variable]
+  TZ = "Europe/Madrid"
+
+[volume]
+  name = "data"
+  mountPath = "/app/data"
