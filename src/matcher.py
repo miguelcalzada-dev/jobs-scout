@@ -178,16 +178,16 @@ def _score_from_preferences(job: dict, prefs) -> float:
     return score
 
 
-async def score_all_unscored_jobs() -> int:
+async def score_all_unscored_jobs(rescore_all: bool = False) -> int:
     prefs = load_preferences()
     cv_profile = load_cv_profile()
 
-    jobs = get_unscored_jobs(limit=200)
+    jobs = get_unscored_jobs(limit=200, rescore_all=rescore_all)
     if not jobs:
         logger.info("No hay ofertas nuevas para puntuar")
         return 0
 
-    logger.info(f"Puntuando {len(jobs)} ofertas nuevas...")
+    logger.info(f"Puntuando {len(jobs)} ofertas...")
 
     if cv_profile:
         cv_text = cv_profile.to_text_block()

@@ -59,6 +59,7 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 scheduler = AsyncIOScheduler(timezone=settings.tz)
 _is_running = False
+_rescore_next = False
 _last_run_status: dict = {"status": "idle", "last_run": None, "errors": []}
 
 _jinja_env = Environment(
@@ -87,6 +88,7 @@ async def run_daily_job() -> dict:
     results = {"status": "running", "started_at": datetime.now().isoformat(), "sources": {}, "errors": []}
 
     try:
+        global _rescore_next
         prefs = load_preferences()
         cv = load_cv_profile()
 
@@ -150,11 +152,12 @@ async def run_daily_job() -> dict:
         total_found = len(all_offers)
         logger.info(f"Total offers scraped: {total_found} across all platforms")
 
-        if all_offers:
-            logger.info("Scoring offers...")
-            scored = await score_all_unscored_jobs()
-            logger.info(f"Scored {scored} offers")
+        if all_offers or _rescore_next:
+            logger.info("Puntuando ofertas...")
+            scored = await score_all_unscored_jobs(rescore_all=_rescore_next)
+            logger.info(f"Puntuadas {scored} ofertas")
             results["scored"] = scored
+            _rescore_next = False
 
         top_jobs = get_pending_notification_jobs(limit=settings.max_jobs_per_day)
 
@@ -319,9 +322,10 @@ async def jobs_today():
 
 @app.post("/run")
 async def trigger_run():
+    global _rescore_next
     if _is_running:
         raise HTTPException(status_code=429, detail="Una búsqueda ya está en progreso")
-
+    _rescore_next = True
     task = asyncio.create_task(run_daily_job())
     return {"status": "triggered", "message": "Búsqueda diaria iniciada"}
 

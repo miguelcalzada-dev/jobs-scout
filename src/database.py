@@ -141,17 +141,21 @@ def bulk_insert_jobs(jobs: list[JobOffer]) -> tuple[int, int]:
     return inserted, skipped
 
 
-def get_unscored_jobs(limit: int = 200) -> list[dict]:
+def get_unscored_jobs(limit: int = 200, rescore_all: bool = False) -> list[dict]:
     with get_db() as conn:
         cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
-        rows = conn.execute("""
-            SELECT * FROM job_offers
-            WHERE match_score = 0
-              AND scrape_date >= ?
-              AND discarded = 0
-            ORDER BY scrape_date DESC
-            LIMIT ?
-        """, (cutoff, limit)).fetchall()
+        if rescore_all:
+            rows = conn.execute("""
+                SELECT * FROM job_offers
+                WHERE discarded = 0 AND scrape_date >= ?
+                ORDER BY scrape_date DESC LIMIT ?
+            """, (cutoff, limit)).fetchall()
+        else:
+            rows = conn.execute("""
+                SELECT * FROM job_offers
+                WHERE match_score = 0 AND discarded = 0 AND scrape_date >= ?
+                ORDER BY scrape_date DESC LIMIT ?
+            """, (cutoff, limit)).fetchall()
     return [dict(row) for row in rows]
 
 
