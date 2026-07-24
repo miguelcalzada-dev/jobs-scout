@@ -65,11 +65,10 @@ async def send_daily_email(jobs: list[dict]) -> bool:
             aiosmtplib.send(
                 message,
                 hostname=settings.email_host,
-                port=settings.email_port,
+                port=465,
                 username=settings.email_user,
                 password=settings.email_password,
-                use_tls=False,
-                start_tls=True,
+                use_tls=True,
             ),
             timeout=20.0,
         )
@@ -108,8 +107,7 @@ async def _send_email_sync(jobs: list[dict]) -> bool:
     message.attach(MIMEText(html_content, "html", "utf-8"))
 
     try:
-        server = smtplib.SMTP(settings.email_host, settings.email_port, timeout=30)
-        server.starttls()
+        server = smtplib.SMTP_SSL(settings.email_host, 465, timeout=30)
         server.login(settings.email_user, settings.email_password)
         server.send_message(message)
         server.quit()
