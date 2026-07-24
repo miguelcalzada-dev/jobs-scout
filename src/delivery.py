@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Optional
 
+import httpx
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from src.config import (
@@ -21,15 +23,21 @@ _jinja_env = Environment(
     autoescape=select_autoescape(["html", "xml"]),
 )
 
+RESEND_API_URL = "https://api.resend.com/emails"
+
 
 async def send_daily_email(jobs: list[dict]) -> bool:
-    if not settings.email_user or not settings.email_password:
-        logger.warning("Credenciales de email no configuradas")
+    if not os.getenv("RESEND_API_KEY") and not settings.email_password:
+        logger.warning("Resend API Key no configurada")
         return False
 
     if not jobs:
         logger.info("No hay ofertas que enviar")
         return False
+
+    resend_key = os.getenv("RESEND_API_KEY", "")
+    from_email = settings.email_from or settings.email_user or "Jobs Scout <onboarding@resend.dev>"
+    to_email = settings.email_to or settings.email_user
 
     try:
         prefs = load_preferences()
@@ -46,65 +54,35 @@ async def send_daily_email(jobs: list[dict]) -> bool:
             cv=cv,
         )
 
-        import smtplib
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-
-        message = MIMEMultipart("alternative")
-        message["Subject"] = subject
-        message["From"] = settings.email_from or settings.email_user
-        message["To"] = settings.email_to or settings.email_user
-
         text_content = _build_plain_text(jobs)
-        message.attach(MIMEText(text_content, "plain", "utf-8"))
-        message.attach(MIMEText(html_content, "html", "utf-8"))
 
-        logger.info(f"Enviando email a {settings.email_to} via SMTP_SSL:465...")
+        payload = {
+            "from": from_email,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content,
+            "text": text_content,
+        }
 
-        def _send_sync():
-            server = smtplib.SMTP_SSL(settings.email_host, 465, timeout=15)
-            server.login(settings.email_user, settings.email_password)
-            server.send_message(message)
-            server.quit()
+        headers = {
+            "Authorization": f"Bearer {resend_key}",
+            "Content-Type": "application/json",
+        }
 
-        await asyncio.get_event_loop().run_in_executor(None, _send_sync)
+        logger.info(f"Enviando email a {to_email} via Resend API...")
 
-        logger.info(f"Email enviado a {settings.email_to} con {len(jobs)} ofertas")
-        return True
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(RESEND_API_URL, json=payload, headers=headers)
+
+        if resp.status_code in (200, 201, 202):
+            logger.info(f"Email enviado a {to_email} con {len(jobs)} ofertas")
+            return True
+        else:
+            logger.error(f"Resend API error {resp.status_code}: {resp.text[:300]}")
+            return False
 
     except Exception as e:
-        logger.error(f"Failed to send email: {e}", exc_info=True)
-        return False
-
-
-async def _send_email_sync(jobs: list[dict]) -> bool:
-    import smtplib
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-
-    today = datetime.now().strftime("%d/%m/%Y")
-    subject = f"🔎 Jobs Scout - {len(jobs)} ofertas para ti ({today})"
-
-    template = _jinja_env.get_template("daily_email.html")
-    html_content = template.render(jobs=jobs, date=today)
-
-    message = MIMEMultipart("alternative")
-    message["Subject"] = subject
-    message["From"] = settings.email_from or settings.email_user
-    message["To"] = settings.email_to or settings.email_user
-
-    message.attach(MIMEText(_build_plain_text(jobs), "plain", "utf-8"))
-    message.attach(MIMEText(html_content, "html", "utf-8"))
-
-    try:
-        server = smtplib.SMTP_SSL(settings.email_host, 465, timeout=30)
-        server.login(settings.email_user, settings.email_password)
-        server.send_message(message)
-        server.quit()
-        logger.info(f"Email sent (sync) to {settings.email_to} with {len(jobs)} jobs")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to send email (sync): {e}")
+        logger.error(f"Error enviando email: {e}")
         return False
 
 
@@ -124,32 +102,29 @@ def _build_plain_text(jobs: list[dict]) -> str:
 
 
 async def test_email_connection() -> bool:
-    try:
-        import aiosmtplib
-
-        await aiosmtplib.send(
-            await _build_test_message(),
-            hostname=settings.email_host,
-            port=settings.email_port,
-            username=settings.email_user,
-            password=settings.email_password,
-            use_tls=False,
-            start_tls=True,
-        )
-        logger.info("Email connection test: OK")
-        return True
-    except Exception as e:
-        logger.error(f"Email connection test failed: {e}")
+    resend_key = os.getenv("RESEND_API_KEY", "")
+    if not resend_key:
+        logger.warning("No RESEND_API_KEY configured")
         return False
 
+    try:
+        payload = {
+            "from": "Jobs Scout <onboarding@resend.dev>",
+            "to": [settings.email_to or settings.email_user],
+            "subject": "Jobs Scout - Test de conexión",
+            "html": "<p>Test de conexión exitoso. <strong>Jobs Scout</strong> está configurado correctamente.</p>",
+        }
+        headers = {"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"}
 
-async def _build_test_message():
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(RESEND_API_URL, json=payload, headers=headers)
 
-    msg = MIMEMultipart()
-    msg["Subject"] = "Jobs Scout - Test de conexión"
-    msg["From"] = settings.email_from or settings.email_user
-    msg["To"] = settings.email_to or settings.email_user
-    msg.attach(MIMEText("Test de conexión exitoso. Jobs Scout está configurado correctamente.", "plain", "utf-8"))
-    return msg
+        if resp.status_code in (200, 201, 202):
+            logger.info("Conexión Resend: OK")
+            return True
+        else:
+            logger.error(f"Resend test failed: {resp.status_code} - {resp.text[:200]}")
+            return False
+    except Exception as e:
+        logger.error(f"Resend test error: {e}")
+        return False
