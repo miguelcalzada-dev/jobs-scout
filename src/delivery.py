@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime
 from typing import Optional
@@ -58,22 +59,30 @@ async def send_daily_email(jobs: list[dict]) -> bool:
         message.attach(MIMEText(text_content, "plain", "utf-8"))
         message.attach(MIMEText(html_content, "html", "utf-8"))
 
-        await aiosmtplib.send(
-            message,
-            hostname=settings.email_host,
-            port=settings.email_port,
-            username=settings.email_user,
-            password=settings.email_password,
-            use_tls=False,
-            start_tls=True,
+        logger.info(f"Enviando email a {settings.email_to}...")
+
+        await asyncio.wait_for(
+            aiosmtplib.send(
+                message,
+                hostname=settings.email_host,
+                port=settings.email_port,
+                username=settings.email_user,
+                password=settings.email_password,
+                use_tls=False,
+                start_tls=True,
+            ),
+            timeout=20.0,
         )
 
-        logger.info(f"Email sent to {settings.email_to} with {len(jobs)} jobs")
+        logger.info(f"Email enviado a {settings.email_to} con {len(jobs)} ofertas")
         return True
 
     except ImportError:
-        logger.warning("aiosmtplib not available, falling back to smtplib")
+        logger.warning("aiosmtplib no disponible, usando smtplib")
         return await _send_email_sync(jobs)
+    except asyncio.TimeoutError:
+        logger.error("Timeout enviando email (>20s)")
+        return False
     except Exception as e:
         logger.error(f"Failed to send email: {e}", exc_info=True)
         return False
