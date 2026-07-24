@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -825,7 +825,18 @@ async def get_profile():
 
 
 @app.post("/auto-apply")
-async def trigger_autoapply(min_score: int = 75):
+async def trigger_autoapply(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    min_score = int(body.get("min_score", 75))
+    email = body.get("email", "")
+    password = body.get("password", "")
+    if email:
+        os.environ["TECNOEMPLEO_EMAIL"] = email
+    if password:
+        os.environ["TECNOEMPLEO_PASSWORD"] = password
     task = asyncio.create_task(run_autoapply(min_score=min_score))
     return {"status": "triggered", "min_score": min_score, "message": "Auto-apply iniciado en segundo plano"}
 

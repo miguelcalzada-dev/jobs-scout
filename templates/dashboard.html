@@ -741,6 +741,16 @@
                         &#128161; El sistema inicia sesión en Tecnoempleo con tus credenciales, genera una carta de presentación personalizada con IA y envía la candidatura por ti. <strong>Solo aplica en ofertas que no redirigen a webs externas.</strong>
                     </p>
 
+                    {% if autoapply.eligible_jobs is defined and autoapply.eligible_jobs == 0 %}
+                    <div style="background:var(--warning-bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;">
+                        &#9888; No hay ofertas de Tecnoempleo puntuadas en la base de datos. <strong>Ejecuta primero una búsqueda</strong> desde la pestaña Ofertas (botón "Buscar ahora").
+                    </div>
+                    {% elif autoapply.eligible_jobs is defined %}
+                    <div style="background:var(--success-bg);border:1px solid #a7f3d0;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;">
+                        &#128269; <strong>{{ autoapply.eligible_jobs }}</strong> ofertas de Tecnoempleo disponibles para auto-aplicar
+                    </div>
+                    {% endif %}
+
                     {% if autoapply.running %}
                     <div style="background:var(--warning-bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:18px;margin-bottom:16px;text-align:center;">
                         <span class="spinner"></span> <strong>Auto Apply en progreso...</strong>
@@ -1341,7 +1351,11 @@
             document.getElementById('aa-status').textContent = '';
 
             try {
-                var res = await fetch('/auto-apply?min_score=' + minScore, { method: 'POST' });
+                var res = await fetch('/auto-apply', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({min_score: minScore, email: email, password: pwd})
+                });
                 var data = await res.json();
                 if (data.status === 'triggered') {
                     btn.innerHTML = '<span class="spinner"></span> Auto Apply en marcha...';

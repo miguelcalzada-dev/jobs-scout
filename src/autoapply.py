@@ -423,10 +423,21 @@ def _find_cv_pdf() -> Optional[Path]:
 
 
 def get_autoapply_results() -> dict:
+    from src.database import get_db
+    from datetime import timedelta
+
+    cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
+    with get_db() as conn:
+        eligible = conn.execute(
+            "SELECT COUNT(*) FROM job_offers WHERE source = 'tecnoempleo' AND match_score > 0 AND applied = 0 AND discarded = 0 AND scrape_date >= ?",
+            (cutoff,),
+        ).fetchone()[0]
+
     return {
         "running": _autoapply_running,
         "min_score": _min_auto_score,
         "total": len(AUTOAPPLY_RESULTS),
         "applied": sum(1 for r in AUTOAPPLY_RESULTS if r["status"] == "applied"),
+        "eligible_jobs": eligible,
         "results": AUTOAPPLY_RESULTS[-50:],
     }
