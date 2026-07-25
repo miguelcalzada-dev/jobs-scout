@@ -108,11 +108,24 @@ def _score_from_preferences(job: dict, prefs) -> float:
                     title_word_hits += 1
         score += title_word_hits * 7.0
 
-    modality = _detect_modality_from_text(f"{job_title} {job_desc} {job_location}")
+    # Use scraper flags as the primary source; text-based detection is only
+    # a fallback when the scraper did not set any modality flag.  This prevents
+    # the matcher from overriding a scraper-detected "hibrido" with "remoto"
+    # just because the description mentions remote-work generically.
+    scraper_remote = job.get("remote") or False
+    scraper_hybrid = job.get("hybrid") or False
+    scraper_has_flag = scraper_remote or scraper_hybrid
 
-    is_remote = job.get("remote") or modality["remote"]
-    is_hybrid = job.get("hybrid") or modality["hybrid"]
-    is_onsite = (job.get("onsite") and not is_remote and not is_hybrid) or modality["onsite"]
+    if not scraper_has_flag:
+        modality_text = _detect_modality_from_text(f"{job_title} {job_desc} {job_location}")
+        is_remote = modality_text.get("remote", False)
+        is_hybrid = modality_text.get("hybrid", False)
+        is_onsite = modality_text.get("onsite", False) or (job.get("onsite", False))
+    else:
+        # If scraper explicitly set a flag, use it (prevent text override).
+        is_remote = scraper_remote and not scraper_hybrid
+        is_hybrid = scraper_hybrid and not scraper_remote
+        is_onsite = job.get("onsite") and not is_remote and not is_hybrid
 
     cities_found = _detect_city_from_location(job_location, job_desc)
     pref_location = (prefs.location or "").lower().strip()
@@ -153,8 +166,8 @@ def _score_from_preferences(job: dict, prefs) -> float:
             # Hybrid office in a non-preferred city -> user can't commute -> reject.
             score -= 45.0
         elif office_city_unknown:
-            # Hybrid office in unknown city -> unverifiable, moderate penalty.
-            score -= 25.0
+            # Hybrid office in unknown city -> unverifiable, reject.
+            score -= 45.0
         else:
             score += 10.0
     elif is_onsite:
@@ -165,7 +178,7 @@ def _score_from_preferences(job: dict, prefs) -> float:
         elif office_city_mismatch:
             score -= 45.0
         elif office_city_unknown:
-            score -= 25.0
+            score -= 45.0
 
     # Location scoring (only adds bonuses; mismatches already penalized above).
     location_remoto = is_remote or "remoto" in job_location or "españa" in job_location or "espana" in job_location
