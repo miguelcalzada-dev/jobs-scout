@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import logging
 import sqlite3
-import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator
 
 from src.config import DB_PATH, settings
-from src.scraper import JobOffer, JobSource
+from src.scraper import JobOffer
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +40,7 @@ CREATE TABLE IF NOT EXISTS job_offers (
     seen INTEGER DEFAULT 0,
     applied INTEGER DEFAULT 0,
     discarded INTEGER DEFAULT 0,
+    is_external_redirect INTEGER DEFAULT 0,
     raw_data TEXT,
     UNIQUE(source, external_id)
 );
@@ -61,6 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_jobs_scrape_date ON job_offers(scrape_date);
 CREATE INDEX IF NOT EXISTS idx_jobs_score ON job_offers(match_score DESC);
 CREATE INDEX IF NOT EXISTS idx_jobs_notified ON job_offers(notified);
 CREATE INDEX IF NOT EXISTS idx_jobs_unique ON job_offers(source, external_id);
+CREATE INDEX IF NOT EXISTS idx_runs_date ON scrape_runs(run_date);
 """
 
 
@@ -72,10 +72,20 @@ def _get_conn() -> sqlite3.Connection:
     return conn
 
 
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    cols = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+        logger.info(f"Added column {column} to {table}")
+
+
 def init_db() -> None:
     conn = _get_conn()
     try:
         conn.executescript(SCHEMA)
+        _ensure_column(conn, "job_offers", "is_external_redirect", "INTEGER DEFAULT 0")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_external ON job_offers(is_external_redirect)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_discarded ON job_offers(discarded)")
     finally:
         conn.close()
     logger.info("Database initialized")
@@ -90,51 +100,16 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
         conn.close()
 
 
-def insert_job(job: JobOffer) -> bool:
+def clear_all_jobs() -> int:
     with get_db() as conn:
-        try:
-            conn.execute("""
-                INSERT OR IGNORE INTO job_offers
-                (source, external_id, title, company, location, url, description,
-                 description_html, salary, salary_min, salary_max, contract_type,
-                 remote, hybrid, onsite, published_date, scrape_date,
-                 technologies_detected, seniority_level, company_size, sector, raw_data)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                job.source.value,
-                job.external_id,
-                job.title,
-                job.company,
-                job.location,
-                job.url,
-                job.description[:10000],
-                job.description_html,
-                job.salary,
-                job.salary_min,
-                job.salary_max,
-                job.contract_type,
-                1 if job.remote else 0,
-                1 if job.hybrid else 0,
-                1 if job.onsite else 0,
-                job.published_date,
-                job.scrape_date,
-                ",".join(job.technologies_detected),
-                job.seniority_level,
-                job.company_size,
-                job.sector,
-                str(job.raw_data) if job.raw_data else "{}",
-            ))
-            return True
-        except Exception as e:
-            logger.debug(f"Failed to insert job {job.external_id}: {e}")
-            return False
+        cur = conn.execute("DELETE FROM job_offers")
+        return cur.rowcount
 
 
 def bulk_insert_jobs(jobs: list[JobOffer]) -> tuple[int, int]:
     if not jobs:
         return 0, 0
     with get_db() as conn:
-        before = conn.execute("SELECT COUNT(*) FROM job_offers").fetchone()[0]
         data = [
             (
                 job.source.value,
@@ -158,17 +133,20 @@ def bulk_insert_jobs(jobs: list[JobOffer]) -> tuple[int, int]:
                 job.seniority_level,
                 job.company_size,
                 job.sector,
+                1 if job.is_external_redirect else 0,
                 str(job.raw_data) if job.raw_data else "{}",
             )
             for job in jobs
         ]
+        before = conn.execute("SELECT COUNT(*) FROM job_offers").fetchone()[0]
         conn.executemany(
             "INSERT OR IGNORE INTO job_offers "
             "(source, external_id, title, company, location, url, description, "
             "description_html, salary, salary_min, salary_max, contract_type, "
             "remote, hybrid, onsite, published_date, scrape_date, "
-            "technologies_detected, seniority_level, company_size, sector, raw_data) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "technologies_detected, seniority_level, company_size, sector, "
+            "is_external_redirect, raw_data) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             data,
         )
         after = conn.execute("SELECT COUNT(*) FROM job_offers").fetchone()[0]
@@ -177,22 +155,27 @@ def bulk_insert_jobs(jobs: list[JobOffer]) -> tuple[int, int]:
     return inserted, skipped
 
 
-def get_unscored_jobs(limit: int = 200, rescore_all: bool = False) -> list[dict]:
+def get_unscored_jobs(limit: int = 300) -> list[dict]:
     with get_db() as conn:
-        cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
-        if rescore_all:
-            rows = conn.execute("""
-                SELECT * FROM job_offers
-                WHERE discarded = 0 AND scrape_date >= ?
-                ORDER BY scrape_date DESC LIMIT ?
-            """, (cutoff, limit)).fetchall()
-        else:
-            rows = conn.execute("""
-                SELECT * FROM job_offers
-                WHERE match_score = 0 AND discarded = 0 AND scrape_date >= ?
-                ORDER BY scrape_date DESC LIMIT ?
-            """, (cutoff, limit)).fetchall()
+        rows = conn.execute("""
+            SELECT id, source, external_id, title, company, location, url,
+                   description, salary_min, technologies_detected, seniority_level,
+                   remote, hybrid, onsite, scrape_date
+            FROM job_offers
+            WHERE match_score = 0
+              AND discarded = 0
+              AND is_external_redirect = 0
+            ORDER BY scrape_date DESC LIMIT ?
+        """, (limit,)).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_all_active_job_ids() -> list[tuple[str, str]]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT external_id, source FROM job_offers WHERE discarded = 0 AND is_external_redirect = 0"
+        ).fetchall()
+    return [(r["external_id"], r["source"]) for r in rows]
 
 
 def update_job_score(external_id: str, source: str, score: float, match_reason: str = "") -> None:
@@ -203,13 +186,23 @@ def update_job_score(external_id: str, source: str, score: float, match_reason: 
         """, (round(score, 4), match_reason, external_id, source))
 
 
-def get_top_jobs(limit: int = 10, days: int = 3) -> list[dict]:
+def reset_all_scores() -> int:
     with get_db() as conn:
-        cutoff = (datetime.now() - timedelta(days=max(days, 1))).isoformat()
+        cur = conn.execute("UPDATE job_offers SET match_score = 0")
+        return cur.rowcount
+
+
+def get_top_jobs(limit: int = 50, days: int = 3) -> list[dict]:
+    cutoff = (datetime.now() - timedelta(days=max(days, 1))).isoformat()
+    with get_db() as conn:
         rows = conn.execute("""
-            SELECT * FROM job_offers
+            SELECT id, source, external_id, title, company, location, url,
+                   salary, match_score, remote, hybrid, onsite,
+                   technologies_detected, seniority_level, scrape_date
+            FROM job_offers
             WHERE match_score > 0
               AND discarded = 0
+              AND is_external_redirect = 0
               AND scrape_date >= ?
             ORDER BY match_score DESC
             LIMIT ?
@@ -221,10 +214,13 @@ def get_pending_notification_jobs(limit: int = 10) -> list[dict]:
     with get_db() as conn:
         cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
         rows = conn.execute("""
-            SELECT * FROM job_offers
+            SELECT id, source, external_id, title, company, location, url, salary,
+                   match_score, remote, hybrid, technologies_detected, scrape_date
+            FROM job_offers
             WHERE notified = 0
               AND match_score > 0
               AND discarded = 0
+              AND is_external_redirect = 0
               AND scrape_date >= ?
             ORDER BY match_score DESC
             LIMIT ?
@@ -233,6 +229,8 @@ def get_pending_notification_jobs(limit: int = 10) -> list[dict]:
 
 
 def mark_as_notified(job_ids: list[int]) -> None:
+    if not job_ids:
+        return
     with get_db() as conn:
         conn.executemany(
             "UPDATE job_offers SET notified = 1 WHERE id = ?",
@@ -242,18 +240,12 @@ def mark_as_notified(job_ids: list[int]) -> None:
 
 def mark_as_applied(job_id: int) -> None:
     with get_db() as conn:
-        conn.execute(
-            "UPDATE job_offers SET applied = 1, seen = 1 WHERE id = ?",
-            (job_id,),
-        )
+        conn.execute("UPDATE job_offers SET applied = 1, seen = 1 WHERE id = ?", (job_id,))
 
 
 def mark_as_discarded(job_id: int) -> None:
     with get_db() as conn:
-        conn.execute(
-            "UPDATE job_offers SET discarded = 1, seen = 1 WHERE id = ?",
-            (job_id,),
-        )
+        conn.execute("UPDATE job_offers SET discarded = 1, seen = 1 WHERE id = ?", (job_id,))
 
 
 def log_scrape_run(source: str, status: str, offers_found: int, duration: float, error: str = "") -> None:
@@ -264,30 +256,70 @@ def log_scrape_run(source: str, status: str, offers_found: int, duration: float,
         """, (datetime.now().isoformat(), source, status, offers_found, duration, error))
 
 
+def get_scrape_runs_paged(page: int = 1, per_page: int = 25, max_runs: int = 50) -> dict:
+    """Return one page of the most recent scrape runs (server-side pagination)."""
+    with get_db() as conn:
+        total_count = conn.execute("SELECT COUNT(*) FROM scrape_runs").fetchone()[0]
+        capped_rows = conn.execute("""
+            SELECT run_date, source, status, offers_found, duration_seconds
+            FROM scrape_runs
+            ORDER BY run_date DESC
+            LIMIT ?
+        """, (max_runs,)).fetchall()
+    capped = [dict(r) for r in capped_rows]
+    total_pages = max(1, (len(capped) + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_rows = capped[start:end]
+    return {
+        "runs": page_rows,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": total_pages,
+        "total_shown": len(capped),
+        "total_in_db": total_count,
+    }
+
+
 def cleanup_old_jobs(retention_days: int = 30) -> int:
     with get_db() as conn:
         cutoff = (datetime.now() - timedelta(days=retention_days)).isoformat()
-        cursor = conn.execute(
-            "DELETE FROM job_offers WHERE scrape_date < ?",
-            (cutoff,),
-        )
-        return cursor.rowcount
+        cur = conn.execute("DELETE FROM job_offers WHERE scrape_date < ?", (cutoff,))
+        return cur.rowcount
+
+
+def cleanup_old_scrape_runs(retention_days: int = 30) -> int:
+    with get_db() as conn:
+        cutoff = (datetime.now() - timedelta(days=retention_days)).isoformat()
+        cur = conn.execute("DELETE FROM scrape_runs WHERE run_date < ?", (cutoff,))
+        return cur.rowcount
 
 
 def get_stats() -> dict:
+    cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
     with get_db() as conn:
-        total = conn.execute("SELECT COUNT(*) FROM job_offers").fetchone()[0]
-        scored = conn.execute("SELECT COUNT(*) FROM job_offers WHERE match_score > 0").fetchone()[0]
-        notified = conn.execute("SELECT COUNT(*) FROM job_offers WHERE notified = 1").fetchone()[0]
-        applied = conn.execute("SELECT COUNT(*) FROM job_offers WHERE applied = 1").fetchone()[0]
+        row = conn.execute("""
+            SELECT
+                COUNT(*) AS total_jobs,
+                SUM(CASE WHEN match_score > 0 THEN 1 ELSE 0 END) AS scored_jobs,
+                SUM(CASE WHEN notified = 1 THEN 1 ELSE 0 END) AS notified_jobs,
+                SUM(CASE WHEN applied = 1 THEN 1 ELSE 0 END) AS applied_jobs,
+                SUM(CASE WHEN discarded = 1 THEN 1 ELSE 0 END) AS discarded_jobs,
+                SUM(CASE WHEN is_external_redirect = 1 THEN 1 ELSE 0 END) AS external_jobs
+            FROM job_offers
+            WHERE scrape_date >= ?
+        """, (cutoff,)).fetchone()
         last_run = conn.execute(
             "SELECT run_date, COUNT(*) as cnt FROM scrape_runs GROUP BY run_date ORDER BY run_date DESC LIMIT 1"
         ).fetchone()
-        return {
-            "total_jobs": total,
-            "scored_jobs": scored,
-            "notified_jobs": notified,
-            "applied_jobs": applied,
-            "last_run": last_run["run_date"] if last_run else None,
-            "last_run_sources": last_run["cnt"] if last_run else 0,
-        }
+    return {
+        "total_jobs": row["total_jobs"] or 0,
+        "scored_jobs": row["scored_jobs"] or 0,
+        "notified_jobs": row["notified_jobs"] or 0,
+        "applied_jobs": row["applied_jobs"] or 0,
+        "discarded_jobs": row["discarded_jobs"] or 0,
+        "external_jobs": row["external_jobs"] or 0,
+        "last_run": last_run["run_date"] if last_run else None,
+        "last_run_sources": last_run["cnt"] if last_run else 0,
+    }

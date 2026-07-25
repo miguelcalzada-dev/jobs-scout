@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from datetime import datetime
-from typing import Optional
 
 import httpx
 from jinja2 import Environment, FileSystemLoader, select_autoescape

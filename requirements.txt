@@ -8,32 +8,29 @@ python-multipart>=0.0.9
 pyyaml>=6.0.0
 jinja2>=3.1.0
 
-# Database
-aiosqlite>=0.20.0
+# Database (sqlite3 stdlib, no extra deps needed)
 
 # CV Parsing
 pdfplumber>=0.10.0
 
-# Web Scraping
+# Web Scraping (async via httpx)
 httpx>=0.27.0
-requests>=2.31.0
 beautifulsoup4>=4.12.0
 lxml>=5.0.0
-# playwright - opcional, solo para LinkedIn. Instalar con: pip install playwright && playwright install chromium
+# playwright - opcional, solo para Auto Apply. Instalar con: pip install playwright && playwright install chromium
 
 # Job Matching (embeddings, similarity)
 sentence-transformers>=3.0.0
 scikit-learn>=1.5.0
 numpy>=2.0.0
 
-# LLM (optional, for CV parsing)
+# LLM (optional, for CV parsing & cover letters)
 litellm>=1.40.0
 
-# Email Delivery
-aiosmtplib>=3.0.0
+# Email Delivery via Resend HTTP API (NO SMTP - Railway blocks outbound)
 
 # Scheduling
 apscheduler>=3.10.0
 
-# Monitoring / Health
+# Monitoring / Health (used by setup wizard)
 rich>=13.0.0

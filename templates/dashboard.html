@@ -4,1527 +4,1059 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jobs Scout</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="icon" href="/favicon.ico" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --primary: #7c3aed;
-            --primary-light: #a78bfa;
-            --primary-dark: #5b21b6;
-            --accent: #06b6d4;
-            --accent-light: #67e8f9;
-            --bg: #f8f7ff;
+            --bg: #fbfbfd;
+            --bg-elev: #ffffff;
             --card-bg: #ffffff;
-            --text: #1e1b4b;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --success: #059669;
-            --success-bg: #ecfdf5;
-            --warning: #d97706;
-            --warning-bg: #fffbeb;
-            --danger: #dc2626;
-            --danger-bg: #fef2f2;
+            --text: #1d1d1f;
+            --text-muted: #86868b;
+            --text-subtle: #a1a1a6;
+            --border: #e5e5ea;
+            --border-strong: #d2d2d7;
+            --accent: #0a84ff;
+            --accent-soft: rgba(10, 132, 255, .12);
+            --accent-strong: #0071e3;
+            --success: #34c759;
+            --success-soft: rgba(52, 199, 89, .14);
+            --warning: #ff9f0a;
+            --warning-soft: rgba(255, 159, 10, .14);
+            --danger: #ff3b30;
+            --danger-soft: rgba(255, 59, 48, .12);
+            --tecnoempleo: #19a06b;
+            --infojobs: #d92a2a;
             --linkedin: #0a66c2;
-            --infojobs: #dc143c;
-            --tecnoempleo: #059669;
-            --radius: 14px;
-            --radius-sm: 8px;
+            --radius: 18px;
+            --radius-sm: 12px;
+            --radius-xs: 9px;
             --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
-            --shadow: 0 4px 16px rgba(0,0,0,.06);
-            --shadow-lg: 0 12px 40px rgba(0,0,0,.08);
-            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 14px rgba(0,0,0,.04);
+            --shadow-lg: 0 8px 36px rgba(0,0,0,.08);
+            --nav-bd: rgba(0,0,0,.06);
+            --trans: .22s cubic-bezier(.4,0,.2,1);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
         }
-        * { margin:0; padding:0; box-sizing:border-box; }
+
+        [data-theme="dark"] {
+            --bg: #000000;
+            --bg-elev: #1c1c1e;
+            --card-bg: #1c1c1e;
+            --text: #f5f5f7;
+            --text-muted: #a1a1a6;
+            --text-subtle: #6e6e73;
+            --border: #2c2c2e;
+            --border-strong: #3a3a3c;
+            --accent: #0a84ff;
+            --accent-soft: rgba(10, 132, 255, .25);
+            --accent-strong: #409cff;
+            --success: #30d158;
+            --success-soft: rgba(48, 209, 88, .2);
+            --warning: #ff9f0a;
+            --warning-soft: rgba(255, 159, 10, .2);
+            --danger: #ff453a;
+            --danger-soft: rgba(255, 69, 58, .18);
+            --shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.2);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,.5);
+            --nav-bd: rgba(255,255,255,.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: var(--font);
             background: var(--bg);
             color: var(--text);
-            line-height: 1.6;
+            line-height: 1.55;
             min-height: 100vh;
-            background-image: radial-gradient(ellipse at 0% 0%, rgba(124,58,237,.04) 0%, transparent 50%),
-                              radial-gradient(ellipse at 100% 100%, rgba(6,182,212,.04) 0%, transparent 50%);
+            -webkit-font-smoothing: antialiased;
+            transition: background var(--trans), color var(--trans);
         }
+
+        ::selection { background: var(--accent-soft); color: var(--text); }
 
         /* ── Nav ── */
         nav {
-            background: rgba(255,255,255,.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-            padding: 0 24px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            background: color-mix(in srgb, var(--bg) 80%, transparent);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--nav-bd);
+            padding: 0 22px;
+            position: sticky; top: 0; z-index: 100;
         }
         .nav-inner {
-            max-width: 1140px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 60px;
+            max-width: 1180px; margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 56px;
         }
         .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 800;
-            font-size: 18px;
-            letter-spacing: -.3px;
+            display: flex; align-items: center; gap: 10px;
+            font-weight: 700; font-size: 17px; letter-spacing: -.4px;
+            color: var(--text); text-decoration: none;
         }
-        .nav-brand .logo-icon {
-            width: 34px; height: 34px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: white;
+        .nav-brand .logo {
+            width: 30px; height: 30px;
+            background: linear-gradient(135deg, var(--accent), #1d1d1f);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 14px;
+            box-shadow: var(--shadow-sm);
         }
-        .nav-links { display:flex; gap:2px; background:#f3f4f6; border-radius:10px; padding:3px; }
+        [data-theme="dark"] .nav-brand .logo { background: linear-gradient(135deg, #409cff, #48484a); }
+        .nav-mid { display: flex; align-items: center; gap: 2px; }
+        .nav-links {
+            display: flex; gap: 2px;
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            border-radius: 11px; padding: 3px;
+        }
         .nav-links a {
-            padding: 7px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: var(--text-muted);
-            font-size: 13px;
-            font-weight: 600;
-            transition: all .15s;
+            padding: 6px 14px; border-radius: 8px;
+            text-decoration: none; color: var(--text-muted);
+            font-size: 13px; font-weight: 500;
+            transition: all var(--trans); white-space: nowrap;
         }
         .nav-links a:hover { color: var(--text); }
-        .nav-links a.active { background: white; color: var(--primary); box-shadow: var(--shadow-sm); }
-        .nav-actions { display:flex; gap:10px; align-items:center; }
+        .nav-links a.active { background: var(--accent); color: #fff; box-shadow: var(--shadow-sm); }
+        .nav-actions { display: flex; gap: 10px; align-items: center; }
+        .theme-toggle {
+            background: var(--bg-elev); border: 1px solid var(--border);
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 16px; color: var(--text);
+            transition: all var(--trans);
+        }
+        .theme-toggle:hover { transform: rotate(15deg); }
 
         /* ── Layout ── */
-        .container { max-width: 1140px; margin: 0 auto; padding: 28px 24px; }
-        .page { display: none; animation: fadeIn .25s ease; }
+        .container { max-width: 1180px; margin: 0 auto; padding: 26px 22px 80px; }
+        .page { display: none; animation: fadeIn .28s ease; }
         .page.active { display: block; }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes fadeIn { from {opacity:0; transform: translateY(8px);} to {opacity:1; transform: translateY(0);} }
+        .page-title {
+            font-size: 28px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 4px;
+        }
+        .page-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
 
         /* ── Stats ── */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-bottom: 28px;
-        }
-        @media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+        @media (max-width: 720px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
         .stat-card {
             background: var(--card-bg);
-            padding: 20px 18px;
+            padding: 22px 20px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
-            cursor: default;
-            transition: transform .15s, box-shadow .15s;
+            transition: transform var(--trans), box-shadow var(--trans);
         }
         .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-        .stat-card .val { font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
-        .stat-card .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 3px; letter-spacing: .6px; font-weight: 600; }
-        .stat-card:nth-child(1) .val { color: var(--primary); }
-        .stat-card:nth-child(2) .val { color: var(--accent); }
-        .stat-card:nth-child(3) .val { color: var(--success); }
-        .stat-card:nth-child(4) .val { color: #f59e0b; }
+        .stat-card .val { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+        .stat-card .lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; letter-spacing: .6px; font-weight: 600; }
+        .stat-card.s1 .val { color: var(--accent); }
+        .stat-card.s2 .val { color: var(--success); }
+        .stat-card.s3 .val { color: var(--warning); }
+        .stat-card.s4 .val { color: var(--danger); }
 
         /* ── Buttons ── */
         .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 9px 20px; border-radius: var(--radius-sm);
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 20px; border-radius: var(--radius-sm);
             font-size: 13px; font-weight: 600;
             text-decoration: none; cursor: pointer;
-            border: none; font-family: var(--font);
-            transition: all .15s; letter-spacing: -.1px;
+            border: 1px solid transparent; font-family: var(--font);
+            transition: all var(--trans); letter-spacing: -.1px; white-space: nowrap;
         }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,.3); }
-        .btn-accent { background: var(--accent); color: white; }
-        .btn-accent:hover { background: #0891b2; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(6,182,212,.3); }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
-        .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
-        .btn-sm { padding: 5px 12px; font-size: 12px; }
-        .btn-xs { padding: 3px 8px; font-size: 11px; border-radius:5px; }
-        .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent-strong); transform: translateY(-1px); box-shadow: 0 6px 18px var(--accent-soft); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #2bb24a; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #e03328; }
+        .btn-ghost { background: transparent; border-color: var(--border-strong); color: var(--text); }
+        .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-xs { padding: 5px 9px; font-size: 11px; border-radius: 7px; }
+        .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        .icon-btn {
+            background: transparent; border: 1px solid transparent;
+            width: 32px; height: 32px; border-radius: 9px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 14px; color: var(--text-muted); transition: all var(--trans);
+        }
+        .icon-btn:hover { background: var(--bg-elev); color: var(--accent); border-color: var(--border); }
+        .icon-btn.danger:hover { color: var(--danger); }
+        .icon-btn.success:hover { color: var(--success); }
 
         /* ── Cards ── */
         .card {
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            margin-bottom: 18px;
-            overflow: hidden;
-            transition: box-shadow .2s;
+            background: var(--card-bg); border-radius: var(--radius);
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+            margin-bottom: 16px; overflow: hidden;
+            transition: box-shadow var(--trans), border-color var(--trans);
         }
-        .card:hover { box-shadow: var(--shadow-lg); }
         .card-header {
-            padding: 16px 22px;
-            border-bottom: 1px solid var(--border);
-            font-weight: 700;
-            font-size: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #fafbfe;
+            padding: 16px 22px; border-bottom: 1px solid var(--border);
+            font-weight: 600; font-size: 14px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            background: color-mix(in srgb, var(--card-bg) 97%, var(--border));
         }
         .card-body { padding: 22px; }
 
-        /* ── Job Rows ── */
+        /* ── Job rows ── */
+        .filters-bar {
+            display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px;
+        }
+        .filters-bar input, .filters-bar select {
+            background: var(--card-bg); border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm); padding: 9px 14px;
+            font-size: 13px; color: var(--text); font-family: var(--font);
+            transition: border-color var(--trans);
+        }
+        .filters-bar input:focus, .filters-bar select:focus { outline: none; border-color: var(--accent); }
+        .job-list { background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); }
         .job-row {
-            display: flex;
-            align-items: center;
-            padding: 16px 22px;
-            border-bottom: 1px solid var(--border);
-            transition: background .12s;
-            gap: 16px;
+            display: flex; align-items: center; gap: 16px;
+            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            transition: background var(--trans);
         }
         .job-row:last-child { border-bottom: none; }
-        .job-row:hover { background: #faf9ff; }
-        .job-score-widget {
-            min-width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 15px;
-            flex-shrink: 0;
-            letter-spacing: -.5px;
-            border: 3px solid;
+        .job-row:hover { background: color-mix(in srgb, var(--accent) 4%, var(--card-bg)); }
+        .job-score {
+            width: 52px; height: 52px; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px; flex-shrink: 0; line-height: 1; gap: 1px;
+            border: 2.5px solid;
         }
-        .score-high { background: var(--success-bg); color: var(--success); border-color: #a7f3d0; }
-        .score-mid { background: var(--warning-bg); color: var(--warning); border-color: #fde68a; }
-        .score-low { background: #f9fafb; color: var(--text-muted); border-color: var(--border); }
-        .job-info { flex:1; min-width:0; }
-        .job-title { font-weight: 700; font-size: 14px; white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .job-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
-        .job-tech { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-        .tech-tag {
-            background: #f3f4f6; color: #4b5563;
-            padding: 3px 10px; border-radius: 20px; font-size: 11px;
-            font-family: 'SF Mono', 'Fira Code', monospace; font-weight: 500;
+        .job-score .pct { font-size: 14px; }
+        .job-score .pts { font-size: 8px; color: var(--text-muted); text-transform: uppercase; font-weight: 500; }
+        .score-high { background: var(--success-soft); color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, transparent); }
+        .score-mid  { background: var(--warning-soft);  color: var(--warning); border-color: color-mix(in srgb, var(--warning) 40%, transparent); }
+        .score-low  { background: var(--bg-elev); color: var(--text-muted); border-color: var(--border-strong); }
+        .job-main { flex: 1; min-width: 0; }
+        .job-title { font-size: 14.5px; font-weight: 600; letter-spacing: -.2px; display: flex; align-items: center; gap: 8px; }
+        .job-title a { color: var(--text); text-decoration: none; }
+        .job-title a:hover { color: var(--accent); }
+        .job-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .job-meta .src {
+            font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px;
+            text-transform: uppercase; letter-spacing: .4px; color: #fff;
         }
-        .source-tag {
-            color: white; padding: 3px 10px; border-radius: 20px;
-            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing:.3px;
+        .src-tecnoempleo { background: var(--tecnoempleo); }
+        .src-infojobs { background: var(--infojobs); }
+        .src-linkedin { background: var(--linkedin); }
+        .job-techs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+        .tech-badge { font-size: 10px; padding: 2px 7px; border-radius: 5px; background: var(--bg-elev); color: var(--text-muted); border: 1px solid var(--border); font-weight: 500; }
+        .modality-pill {
+            font-size: 10px; padding: 2px 7px; border-radius: 5px; font-weight: 600; letter-spacing: .2px;
         }
-        .source-linkedin { background: var(--linkedin); }
-        .source-infojobs { background: var(--infojobs); }
-        .source-tecnoempleo { background: var(--tecnoempleo); }
-        .badge-remote { background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600; }
-        .badge-hybrid { background:var(--warning-bg);color:var(--warning);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600; }
+        .pill-remote { background: var(--success-soft); color: var(--success); }
+        .pill-hybrid { background: var(--warning-soft); color: var(--warning); }
+        .pill-onsite { background: var(--bg-elev); color: var(--text-muted); }
+        .badge-external { font-size: 10px; padding: 2px 7px; border-radius: 5px; background: var(--danger-soft); color: var(--danger); font-weight: 600; }
 
-        /* ── Empty State ── */
-        .empty-state {
-            text-align: center; padding: 70px 24px; color: var(--text-muted);
+        /* ── Empty state ── */
+        .empty {
+            text-align: center; padding: 64px 22px; color: var(--text-muted);
         }
-        .empty-state .icon { font-size: 56px; margin-bottom: 14px; opacity: .7; }
-        .empty-state h3 { font-size: 17px; margin-bottom: 6px; color: var(--text); }
-        .empty-state p { font-size: 13px; max-width: 400px; margin: 0 auto 18px; }
+        .empty .icon { font-size: 44px; margin-bottom: 12px; opacity: .55; }
+        .empty h3 { font-size: 17px; color: var(--text); font-weight: 600; margin-bottom: 4px; }
+        .empty p { font-size: 13px; }
 
         /* ── Forms ── */
-        .form-group { margin-bottom: 18px; }
-        .form-group label {
-            display: block; font-size: 12px; font-weight: 700;
-            color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .6px;
-        }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: .2px; }
         .form-group input, .form-group select, .form-group textarea {
-            width: 100%; padding: 11px 16px;
-            border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-            font-size: 14px; font-family: var(--font); transition: all .15s; background: #fafbfe;
+            background: var(--bg-elev); border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm); padding: 11px 14px;
+            font-size: 13px; color: var(--text); font-family: var(--font);
+            transition: border-color var(--trans);
         }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none; border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(124,58,237,.1); background: white;
-        }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+        .form-group .hint { font-size: 11px; color: var(--text-subtle); }
+        .form-full { grid-column: 1 / -1; }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+        .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; transition: all var(--trans); }
+        .checkbox-row:hover { border-color: var(--accent); }
+        .checkbox-row input { width: auto; }
+        .fixed-pill { font-size: 9px; padding: 1px 6px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-weight: 700; margin-left: auto; letter-spacing: .3px; }
 
-        /* ── CV Tab ── */
-        .cv-status-bar {
-            display: flex; align-items: center; gap: 10px;
-            padding: 14px 18px; border-radius: var(--radius-sm);
-            margin-bottom: 20px; font-size: 14px; font-weight: 600;
+        /* ── CV drop zone ── */
+        .drop-zone {
+            border: 2px dashed var(--border-strong); border-radius: var(--radius);
+            padding: 38px 22px; text-align: center; cursor: pointer;
+            transition: all var(--trans); background: var(--bg-elev);
         }
-        .cv-status-bar.loaded { background: var(--success-bg); color: var(--success); border: 1px solid #a7f3d0; }
-        .cv-status-bar.empty { background: var(--warning-bg); color: var(--warning); border: 1px solid #fde68a; }
-        .cv-status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-        .cv-status-bar.loaded .cv-status-dot { background: var(--success); animation: pulse 2s infinite; }
-        .cv-status-bar.empty .cv-status-dot { background: var(--warning); }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-soft); }
+        .drop-zone .dz-icon { font-size: 34px; margin-bottom: 10px; }
+        .drop-zone .dz-text { font-weight: 600; font-size: 14px; }
+        .drop-zone .dz-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+        #cvFileName { margin-top: 12px; font-size: 12px; color: var(--text-muted); }
 
-        .profile-feed { display: none; }
-        .profile-feed.show { display: block; animation: fadeIn .3s ease; }
-        .profile-header {
-            display: flex; align-items: center; gap: 18px;
-            margin-bottom: 22px; padding-bottom: 22px;
-            border-bottom: 2px solid #f3f4f6;
-        }
+        /* ── Profile feed ── */
+        .profile-card { display: flex; flex-direction: column; gap: 16px; }
+        .profile-header { display: flex; align-items: center; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
         .profile-avatar {
-            width: 72px; height: 72px; border-radius: 20px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white; display: flex; align-items: center; justify-content: center;
-            font-size: 28px; font-weight: 800; flex-shrink: 0; letter-spacing: -.5px;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--text-muted));
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 18px;
         }
-        .profile-name-box h3 { font-size: 19px; margin-bottom: 2px; letter-spacing: -.3px; }
-        .profile-name-box .subtitle { font-size: 13px; color: var(--primary); font-weight: 500; }
-        .profile-name-box .linkedin-link { font-size: 12px; color: var(--text-muted); }
+        .profile-name-box h3 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+        .profile-name-box .email, .profile-name-box .linkedin-link { font-size: 12px; color: var(--text-muted); }
+        .profile-stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+        .profile-stat { background: var(--bg-elev); border: 1px solid var(--border); padding: 14px; border-radius: var(--radius-sm); text-align: center; }
+        .profile-stat .ps-val { font-size: 22px; font-weight: 700; display: block; color: var(--accent); }
+        .profile-stat .ps-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; }
+        .profile-section h4 { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .4px; }
+        .profile-summary { font-size: 13px; color: var(--text); line-height: 1.65; }
+        .tech-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+        .timeline-item { padding: 10px 0; border-top: 1px solid var(--border); }
+        .timeline-item:first-child { border-top: none; }
+        .ti-title { font-size: 13px; font-weight: 600; }
+        .ti-sub { font-size: 12px; color: var(--text-muted); }
+        .ti-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
 
-        .profile-stats-row {
-            display: flex; gap: 28px; margin-bottom: 20px; flex-wrap: wrap;
-        }
-        .profile-stat .ps-val { font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: -.5px; }
-        .profile-stat .ps-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
+        /* ── History table ── */
+        .history-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+        table.history { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        table.history th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); padding: 10px 14px; border-bottom: 1px solid var(--border); font-weight: 600; background: color-mix(in srgb, var(--card-bg) 95%, var(--border)); }
+        table.history td { padding: 11px 14px; border-bottom: 1px solid var(--border); }
+        table.history tr:last-child td { border-bottom: none; }
+        table.history tbody tr:hover { background: color-mix(in srgb, var(--accent) 4%, var(--card-bg)); }
+        .status-pill { font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: 600; letter-spacing: .3px; }
+        .st-success { background: var(--success-soft); color: var(--success); }
+        .st-failed  { background: var(--danger-soft); color: var(--danger); }
+        .st-partial { background: var(--warning-soft); color: var(--warning); }
+        .pager { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 18px; }
+        .pager .info { font-size: 12px; color: var(--text-muted); }
 
-        .profile-section { margin-bottom: 20px; }
-        .profile-section h4 {
-            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-            color: var(--text-muted); margin-bottom: 10px; font-weight: 700;
-        }
-        .profile-summary {
-            font-size: 14px; color: var(--text); line-height: 1.7;
-            background: #fafbfe; border-radius: var(--radius-sm); padding: 16px 18px;
-            border: 1px solid #f3f4f6;
-        }
-        .tech-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-        .tech-badge {
-            background: #eee9fe; color: var(--primary-dark);
-            padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-            font-family: 'SF Mono', 'Fira Code', monospace; letter-spacing: -.2px;
-        }
-        .timeline-item {
-            padding: 10px 0 10px 18px; border-left: 2px solid #e5e7eb; margin-left: 10px; margin-bottom: 2px;
-        }
-        .timeline-item:last-child { border-left-color: transparent; }
-        .timeline-item .ti-title { font-weight: 700; font-size: 14px; }
-        .timeline-item .ti-sub { font-size: 12px; color: var(--text-muted); }
-        .timeline-item .ti-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-
-        .cv-upload-zone {
-            border: 2.5px dashed #d4d4d8; border-radius: var(--radius);
-            padding: 40px 24px; text-align: center; cursor: pointer;
-            transition: all .2s; background: #fafbfe;
-        }
-        .cv-upload-zone:hover, .cv-upload-zone.dragover {
-            border-color: var(--primary); background: rgba(124,58,237,.03);
-        }
-        .cv-upload-zone .icon { font-size: 40px; margin-bottom: 10px; }
-        .cv-upload-zone p { color: var(--text-muted); font-size: 14px; }
-        .cv-upload-zone input[type=file] { display: none; }
-        .upload-section { margin-top: 24px; padding-top: 20px; border-top: 1.5px solid var(--border); }
-        .upload-section p { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
-
-        /* ── Scoring explainer ── */
-        .explainer-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 14px;
-            margin-bottom: 24px;
-        }
-        .explainer-item {
-            background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 18px;
-        }
-        .explainer-item .ei-icon { font-size: 22px; margin-bottom: 8px; }
-        .explainer-item .ei-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-        .explainer-item .ei-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        /* ── AutoApply ── */
+        .info-box { padding: 14px 16px; border-radius: var(--radius-sm); font-size: 12.5px; margin-bottom: 12px; line-height: 1.55; border: 1px solid; }
+        .info-warn { background: var(--warning-soft); border-color: color-mix(in srgb, var(--warning) 35%, transparent); color: var(--text); }
+        .info-ok { background: var(--success-soft); border-color: color-mix(in srgb, var(--success) 35%, transparent); }
+        .info-err { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+        .aa-result-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+        .aa-result-row:last-child { border-bottom: none; }
+        .aa-status-pill { font-size: 10px; padding: 2px 8px; border-radius: 5px; font-weight: 700; }
+        .spinner { width: 14px; height: 14px; border: 2px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ── Toast ── */
         .toast {
-            position: fixed; bottom: 28px; right: 28px;
-            background: #1e1b4b; color: white;
-            padding: 16px 24px; border-radius: 12px; font-size: 14px; font-weight: 600;
-            z-index: 999; animation: slideUp .3s ease;
-            box-shadow: 0 12px 40px rgba(0,0,0,.2); max-width: 420px; line-height: 1.4;
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: var(--text); color: var(--bg);
+            padding: 12px 22px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+            opacity: 0; transition: all .25s; z-index: 9999; box-shadow: var(--shadow-lg);
         }
-        .toast.success { background: var(--success); }
-        .toast.error { background: var(--danger); }
-        @keyframes slideUp { from { transform: translateY(24px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.error { background: var(--danger); color: #fff; }
+        .toast.success { background: var(--success); color: #fff; }
 
-        .spinner {
-            display: inline-block; width: 16px; height: 16px;
-            border: 2.5px solid rgba(255,255,255,.3);
-            border-top-color: white; border-radius: 50%;
-            animation: spin .6s linear infinite;
+        /* ── Run banner ── */
+        .run-banner {
+            display: none; align-items: center; gap: 10px;
+            padding: 12px 18px; border-radius: var(--radius-sm);
+            background: var(--accent-soft); color: var(--accent);
+            font-size: 13px; font-weight: 600; margin-bottom: 16px;
+            border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .run-banner.show { display: flex; }
 
-        table.historial {
-            width: 100%; border-collapse: collapse; font-size: 13px;
-        }
-        table.historial th {
-            text-align: left; color: var(--text-muted); text-transform: uppercase;
-            font-size: 11px; padding: 10px 8px; border-bottom: 2px solid var(--border);
-            font-weight: 700; letter-spacing: .5px;
-        }
-        table.historial td {
-            padding: 10px 8px; border-bottom: 1px solid var(--border);
-        }
-        table.historial tbody tr:hover { background: #faf9ff; }
+        .muted { color: var(--text-muted); font-size: 12px; }
+        .progress-bar { height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 10px; max-width: 220px; }
+        .progress-bar > div { height: 100%; background: var(--accent); transition: width var(--trans); }
 
-        /* ── Tabs for scoring section ── */
-        .scoring-explain-box {
-            background: linear-gradient(135deg, #faf9ff, #f0f9ff);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
-            margin-bottom: 20px;
-        }
-        .scoring-explain-box h4 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
-        .scoring-explain-box .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-        .scoring-explain-box .step {
-            display: flex; gap: 10px; align-items: flex-start;
-        }
-        .scoring-explain-box .step-num {
-            width: 28px; height: 28px; border-radius: 50%;
-            background: var(--primary); color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 700; flex-shrink: 0;
-        }
-        .scoring-explain-box .step-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
-        .scoring-explain-box .step-text strong { color: var(--text); }
-
-        /* ── Filters ── */
-        .filter-bar {
-            display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
-            padding: 14px 18px; background: var(--card-bg);
-            border: 1px solid var(--border); border-radius: var(--radius);
-            margin-bottom: 16px;
-        }
-        .filter-bar input[type=text] {
-            flex: 1; min-width: 180px; padding: 8px 14px;
-            border: 1.5px solid var(--border); border-radius: 8px;
-            font-size: 13px; font-family: var(--font); outline: none;
-        }
-        .filter-bar input[type=text]:focus { border-color: var(--primary); }
-        .filter-bar select {
-            padding: 8px 12px; border: 1.5px solid var(--border);
-            border-radius: 8px; font-size: 13px; font-family: var(--font);
-            background: white; cursor: pointer;
-        }
-        .filter-bar .filter-score {
-            width: 80px; padding: 8px 10px;
-            border: 1.5px solid var(--border); border-radius: 8px;
-            font-size: 13px; font-family: var(--font); text-align: center;
-        }
-        .filter-bar label { font-size: 11px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
-
-        /* ── Chart container ── */
-        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-        .chart-box {
-            background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 14px;
-            box-shadow: var(--shadow);
-        }
-        .chart-box h4 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-
-        /* ── Scraper toggles ── */
-        .scraper-toggles { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
-        .scraper-toggle-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-        .scraper-toggle-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
-
-        .btn.rate-limited {
-            background: var(--warning-bg) !important;
-            color: var(--warning) !important;
-            border: 1.5px solid #fde68a;
-            cursor: not-allowed;
-            opacity: 0.9;
+        @media (max-width: 640px) {
+            nav { padding: 0 14px; }
+            .nav-links { overflow-x: auto; }
+            .nav-links a { padding: 6px 10px; font-size: 12px; }
+            .container { padding: 20px 14px 80px; }
+            .page-title { font-size: 24px; }
         }
     </style>
 </head>
 <body>
-    <nav>
-        <div class="nav-inner">
-            <div class="nav-brand">
-                <div class="logo-icon">&#128269;</div>
-                Jobs Scout
-            </div>
-            <div class="nav-links">
-                <a href="#ofertas" class="active" onclick="showTab('ofertas')">Ofertas</a>
-                <a href="#cv" onclick="showTab('cv')">Mi CV</a>
-                <a href="#preferencias" onclick="showTab('preferencias')">Preferencias</a>
-                <a href="#historial" onclick="showTab('historial')">Historial</a>
-                <a href="#autoapply" onclick="showTab('autoapply')">Auto Apply</a>
-            </div>
-            <div class="nav-actions">
-                <span style="font-size:12px;color:var(--text-muted);font-weight:500;" id="last-run-text">{{ last_run_text }}</span>
-                <button class="btn btn-accent btn-sm" onclick="triggerScrape()" id="btn-scrape">&#128260; Buscar ahora</button>
+
+<nav>
+    <div class="nav-inner">
+        <a href="/" class="nav-brand">
+            <span class="logo">&#128269;</span>
+            Jobs Scout
+        </a>
+        <div class="nav-mid">
+            <div class="nav-links" id="nav-links">
+                <a data-tab="ofertas" class="active" href="#ofertas">Ofertas</a>
+                <a data-tab="cv" href="#cv">Mi CV</a>
+                <a data-tab="preferencias" href="#preferencias">Preferencias</a>
+                <a data-tab="historial" href="#historial">Historial</a>
+                <a data-tab="autoapply" href="#autoapply">Auto Apply</a>
             </div>
         </div>
-    </nav>
+        <div class="nav-actions">
+            <button class="theme-toggle" id="themeToggle" title="Cambiar tema">&#127769;</button>
+        </div>
+    </div>
+</nav>
 
-    <div class="container">
+<div class="container">
+    <!-- ──────────────────────────────────────────── TAB: OFERTAS ──────────────────────────────────────────── -->
+    <div id="tab-ofertas" class="page active">
+        <div class="run-banner" id="runBanner">
+            <span class="spinner"></span>
+            <span id="runBannerText">Búsqueda en progreso... el lote se refresca con ~50 ofertas nuevas.</span>
+        </div>
 
-        <!-- ── STATS ── -->
         <div class="stats-grid">
-            <div class="stat-card"><div class="val">{{ stats.total_jobs }}</div><div class="lbl">Ofertas totales</div></div>
-            <div class="stat-card"><div class="val">{{ stats.scored_jobs }}</div><div class="lbl">Evaluadas por IA</div></div>
-            <div class="stat-card"><div class="val">{{ stats.notified_jobs }}</div><div class="lbl">Enviadas por email</div></div>
-            <div class="stat-card"><div class="val">{{ stats.applied_jobs }}</div><div class="lbl">Marcadas aplicadas</div></div>
+            <div class="stat-card s1"><div class="val" id="statTotal">{{ stats.total_jobs }}</div><div class="lbl">Ofertas lote actual</div></div>
+            <div class="stat-card s2"><div class="val" id="statScored">{{ stats.scored_jobs }}</div><div class="lbl">Puntuadas</div></div>
+            <div class="stat-card s3"><div class="val" id="statApplied">{{ stats.applied_jobs }}</div><div class="lbl">Aplicadas</div></div>
+            <div class="stat-card s4"><div class="val" id="statExt">{{ stats.external_jobs }}</div><div class="lbl">Externas descartadas</div></div>
         </div>
 
-        <!-- ── TAB: OFERTAS ── -->
-        <div id="tab-ofertas" class="page active">
-
-            <!-- SCORING EXPLAINER -->
-            <div class="scoring-explain-box">
-                <h4>&#128161; ¿Cómo funciona el matching de ofertas?</h4>
-                <div class="steps">
-                    <div class="step">
-                        <span class="step-num">1</span>
-                        <span class="step-text"><strong>IA semántica</strong><br>Un modelo de embeddings (sentence-transformers) compara tu CV y preferencias con cada oferta.</span>
-                    </div>
-                    <div class="step">
-                        <span class="step-num">2</span>
-                        <span class="step-text"><strong>Puntuación por reglas</strong><br>Suma puntos por coincidencia de tecnologías, ubicación, salario, seniority y modalidad.</span>
-                    </div>
-                    <div class="step">
-                        <span class="step-num">3</span>
-                        <span class="step-text"><strong>Penalizaciones</strong><br>Resta puntos si la oferta contiene palabras clave o sectores que quieres evitar.</span>
-                    </div>
-                    <div class="step">
-                        <span class="step-num">4</span>
-                        <span class="step-text"><strong>Ranking final</strong><br>Combina la similitud semántica (60%) con la puntuación por reglas (40%). Resultado: 0-100%.</span>
-                    </div>
-                </div>
-                <p style="font-size:11px;color:var(--text-muted);margin-top:14px;">
-                    <strong>Verde (&ge;70%):</strong> Match excelente &middot;
-                    <strong>Ámbar (40-69%):</strong> Buen match &middot;
-                    <strong>Gris (&lt;40%):</strong> Match bajo &mdash;
-                    Cuanto más completo tu CV y preferencias, mejores resultados.
-                </p>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+            <div>
+                <h1 class="page-title" style="margin-bottom:0;">Ofertas</h1>
+                <div class="muted">{{ last_run_text }}</div>
             </div>
-
-            <div class="filter-bar">
-                <label>Buscar:</label>
-                <input type="text" id="filter-keyword" placeholder="Título, empresa, tecnología..." oninput="applyFilters()">
-                <label>Fuente:</label>
-                <select id="filter-source" onchange="applyFilters()">
-                    <option value="">Todas</option>
-                    <option value="tecnoempleo">Tecnoempleo</option>
-                    <option value="infojobs">InfoJobs</option>
-                    <option value="linkedin">LinkedIn</option>
-                </select>
-                <label>Score min:</label>
-                <input type="number" id="filter-score" class="filter-score" value="0" min="0" max="100" oninput="applyFilters()">
-            </div>
-
-            <div class="card">
-                <div class="card-header" id="jobs-header">
-                    &#128196; Ofertas encontradas
-                    <span style="font-size:12px;color:var(--text-muted);font-weight:500;">{{ jobs|length }} ofertas</span>
-                </div>
-                <div id="jobs-list">
-                {% if jobs %}
-                <div>
-                    {% for job in jobs %}
-                    <div class="job-row" id="job-{{ job.id }}">
-                        <div class="job-score-widget {% if job.match_score >= 70 %}score-high{% elif job.match_score >= 40 %}score-mid{% else %}score-low{% endif %}">
-                            {{ "%.0f"|format(job.match_score) }}%
-                        </div>
-                        <div class="job-info">
-                            <div class="job-title" title="{{ job.title }}">{{ job.title }}</div>
-                            <div class="job-meta">
-                                {{ job.company or '?' }}
-                                <span>&#128205; {{ job.location or 'N/D' }}</span>
-                                {% if job.salary %}<span>&#128176; {{ job.salary }}</span>{% endif %}
-                                <span class="source-tag source-{{ job.source }}">{{ job.source }}</span>
-                                {% if job.remote %}<span class="badge-remote">Remoto</span>{% endif %}
-                                {% if job.hybrid %}<span class="badge-hybrid">Híbrido</span>{% endif %}
-                            </div>
-                            {% set techs = (job.technologies_detected or '').split(',') %}
-                            {% if techs and techs[0] %}
-                            <div class="job-tech">
-                                {% for t in techs[:8] %}<span class="tech-tag">{{ t }}</span>{% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div style="display:flex;gap:8px;flex-shrink:0;">
-                            <a href="{{ job.url }}" target="_blank" class="btn btn-primary btn-sm">Ver oferta</a>
-                            <button class="btn btn-success btn-sm" onclick="markApplied({{ job.id }})" title="Marcar aplicada">&#10003;</button>
-                            <button class="btn btn-danger btn-sm" onclick="markDiscarded({{ job.id }})" title="Descartar">&#10007;</button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state">
-                    <div class="icon">&#128270;</div>
-                    <h3>Sin ofertas todavía</h3>
-                    <p>Sube tu CV en la pestaña "Mi CV" para que la IA calibre las búsquedas, luego haz clic en "Buscar ahora".</p>
-                    <button class="btn btn-accent" onclick="showTab('cv')">&#128100; Ir a Mi CV</button>
-                </div>
-                {% endif %}
-                </div>
-            </div>
+            <button class="btn btn-primary" id="btnRun" onclick="triggerScrape()">&#128269; Buscar ahora</button>
         </div>
 
-        <!-- ── TAB: MI CV ── -->
-        <div id="tab-cv" class="page">
-            <div class="card">
-                <div class="card-header">&#128100; Mi Perfil Profesional</div>
-                <div class="card-body" id="cv-card-body">
-                    {% if cv and (cv.technologies or cv.summary or cv.full_name) %}
-                    <div class="cv-status-bar loaded">
-                        <span class="cv-status-dot"></span>
-                        CV analizado &mdash; Preferencias actualizadas automáticamente desde tu perfil
-                    </div>
-                    <div class="profile-feed show" id="profile-feed">
-                        {{ profile_feed_html|safe }}
-                    </div>
-                    <div class="upload-section">
-                        <p>¿Nuevo CV? Súbelo y las preferencias se actualizarán solas:</p>
-                        <form id="cv-upload-form-update" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;">
-                            <input type="file" name="cv_file" accept=".pdf" id="cv-file-input-update" style="font-size:13px;">
-                            <button type="submit" class="btn btn-ghost btn-sm" id="btn-upload-cv-update">&#128228; Actualizar CV</button>
-                        </form>
-                    </div>
-                    {% else %}
-                    <div class="cv-status-bar empty">
-                        <span class="cv-status-dot"></span>
-                        No hay CV cargado &mdash; Súbelo para desbloquear el matching inteligente
-                    </div>
-                    <div class="profile-feed" id="profile-feed"></div>
-                    <form id="cv-upload-form" enctype="multipart/form-data">
-                        <div class="cv-upload-zone" id="cv-drop-zone">
-                            <div class="icon">&#128193;</div>
-                            <p><strong>Arrastra tu CV en PDF</strong> o haz clic aquí</p>
-                            <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Al subirlo, tus preferencias se configurarán automáticamente</p>
-                            <input type="file" name="cv_file" accept=".pdf" id="cv-file-input">
-                        </div>
-                        <div id="cv-file-name" style="margin-top:10px;font-size:13px;color:var(--text-muted);"></div>
-                        <button type="submit" class="btn btn-primary" style="margin-top:14px;" id="btn-upload-cv">
-                            &#128640; Analizar CV y configurar búsquedas
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
+        <div class="filters-bar">
+            <input type="text" id="fQ" placeholder="Buscar por título, empresa, tecnología..." oninput="applyFiltersDebounced()">
+            <select id="fSource" onchange="applyFilters()">
+                <option value="">Todas las plataformas</option>
+                <option value="tecnoempleo">Tecnoempleo</option>
+                <option value="infojobs">InfoJobs</option>
+            </select>
+            <select id="fMinScore" onchange="applyFilters()">
+                <option value="0">Cualquier score</option>
+                <option value="50">≥ 50%</option>
+                <option value="60">≥ 60%</option>
+                <option value="70">≥ 70%</option>
+                <option value="80">≥ 80%</option>
+            </select>
+            <span class="muted" id="jobsCount"></span>
         </div>
 
-        <!-- ── TAB: PREFERENCIAS ── -->
-        <div id="tab-preferencias" class="page">
-            <div class="card">
-                <div class="card-header">&#9881; Preferencias de búsqueda</div>
-                <div class="card-body">
-                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">
-                        &#128161; Estas preferencias se actualizan automáticamente al subir tu CV. Puedes afinarlas aquí manualmente.
-                    </p>
-                    <div class="scraper-toggles">
-                        <span style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-right:10px;">Plataformas activas:</span>
-                        <label class="scraper-toggle-item"><input type="checkbox" name="scraper_tecnoempleo" {% if 'tecnoempleo' in prefs.enabled_scrapers %}checked{% endif %}> Tecnoempleo</label>
-                        <label class="scraper-toggle-item"><input type="checkbox" name="scraper_infojobs" {% if 'infojobs' in prefs.enabled_scrapers %}checked{% endif %}> InfoJobs</label>
-                        <label class="scraper-toggle-item"><input type="checkbox" name="scraper_linkedin" {% if 'linkedin' in prefs.enabled_scrapers %}checked{% endif %}> LinkedIn</label>
-                    </div>
-                    <form id="prefs-form">
-                        <div class="form-group">
-                            <label>Cargos buscados (separados por comas)</label>
-                            <input type="text" name="desired_titles" value="{{ prefs.desired_titles|join(', ') }}" placeholder="Desarrollador Backend, Python Developer...">
-                        </div>
-                        <div class="form-group">
-                            <label>Tecnologías / Stack</label>
-                            <input type="text" name="tech_stack" value="{{ prefs.tech_stack|join(', ') }}" placeholder="python, django, docker, aws, postgresql...">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Ubicación</label>
-                                <input type="text" name="location" value="{{ prefs.location }}" placeholder="Madrid, Remoto España">
-                            </div>
-                            <div class="form-group">
-                                <label>Salario mínimo anual (€)</label>
-                                <input type="number" name="min_salary" value="{{ prefs.min_salary }}" placeholder="35000">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Seniority</label>
-                                <select name="seniority">
-                                    <option value="" {% if not prefs.seniority %}selected{% endif %}>Indiferente</option>
-                                    <option value="junior" {% if prefs.seniority == 'junior' %}selected{% endif %}>Junior</option>
-                                    <option value="mid" {% if prefs.seniority == 'mid' %}selected{% endif %}>Mid</option>
-                                    <option value="senior" {% if prefs.seniority == 'senior' %}selected{% endif %}>Senior</option>
-                                    <option value="lead" {% if prefs.seniority == 'lead' %}selected{% endif %}>Lead / Manager</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Modalidad</label>
-                                <select name="modality">
-                                    <option value="any" {% if not prefs.remote_only and prefs.hybrid_allowed %}selected{% endif %}>Todas</option>
-                                    <option value="remote" {% if prefs.remote_only %}selected{% endif %}>Solo remoto</option>
-                                    <option value="hybrid" {% if prefs.hybrid_allowed and not prefs.remote_only %}selected{% endif %}>Remoto + Híbrido</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Palabras clave a EVITAR</label>
-                            <input type="text" name="exclude_keywords" value="{{ prefs.exclude_keywords|join(', ') }}" placeholder="wordpress, php, drupal...">
-                        </div>
-                        <div class="form-group">
-                            <label>Sectores a EVITAR</label>
-                            <input type="text" name="exclude_sectors" value="{{ prefs.exclude_sectors|join(', ') }}" placeholder="consulting, banking...">
-                        </div>
-                        <button type="submit" class="btn btn-primary">&#128190; Guardar preferencias</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── TAB: HISTORIAL ── -->
-        <div id="tab-historial" class="page">
-            <div class="chart-row">
-                <div class="chart-box">
-                    <h4>&#128200; Ofertas encontradas por día</h4>
-                    <canvas id="chart-offers" height="140"></canvas>
-                </div>
-                <div class="chart-box">
-                    <h4>&#128202; Por plataforma (últimos 7 días)</h4>
-                    <canvas id="chart-sources" height="140"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">&#128337; Historial de búsquedas</div>
-                <div class="card-body">
-                    {% if scrape_runs %}
-                    <table class="historial">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Plataforma</th>
-                                <th>Estado</th>
-                                <th>Ofertas</th>
-                                <th>Duración</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for run in scrape_runs %}
-                            <tr>
-                                <td>{{ run.run_date[:16] }}</td>
-                                <td>{{ run.source }}</td>
-                                <td>
-                                    {% if run.status == 'success' %}<span style="color:var(--success);">&#10003;</span>
-                                    {% elif run.status == 'partial' %}<span style="color:var(--warning);">&#9888;</span>
-                                    {% else %}<span style="color:var(--danger);">&#10007;</span>{% endif %}
-                                    {{ run.status }}
-                                </td>
-                                <td>{{ run.offers_found }}</td>
-                                <td>{{ "%.1f"|format(run.duration_seconds) }}s</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                    <div class="empty-state">
-                        <div class="icon">&#128337;</div>
-                        <h3>Sin historial</h3>
-                        <p>Las ejecuciones de búsqueda aparecerán aquí.</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- ── TAB: AUTO APPLY ── -->
-        <div id="tab-autoapply" class="page">
-            <div class="card">
-                <div class="card-header">&#129302; Auto Apply — Candidaturas automáticas en Tecnoempleo</div>
-                <div class="card-body">
-                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">
-                        &#128161; El sistema inicia sesión en Tecnoempleo con tus credenciales, genera una carta de presentación personalizada con IA y envía la candidatura por ti. <strong>Solo aplica en ofertas que no redirigen a webs externas.</strong>
-                    </p>
-
-                    {% if autoapply.eligible_jobs is defined and autoapply.eligible_jobs == 0 %}
-                    <div style="background:var(--warning-bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;">
-                        &#9888; No hay ofertas de Tecnoempleo puntuadas en la base de datos. <strong>Ejecuta primero una búsqueda</strong> desde la pestaña Ofertas (botón "Buscar ahora").
-                    </div>
-                    {% elif autoapply.eligible_jobs is defined %}
-                    <div style="background:var(--success-bg);border:1px solid #a7f3d0;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;" id="aa-eligible-info">
-                        &#128269; <strong><span id="aa-eligible-count">{{ autoapply.eligible_jobs }}</span></strong> ofertas de Tecnoempleo con score suficiente para auto-aplicar
-                    </div>
-                    {% endif %}
-
-                    {% if not cv or not cv.technologies %}
-                    <div style="background:var(--warning-bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;">
-                        &#9888; <strong>No tienes CV cargado.</strong> Las puntuaciones serán bajas. Sube tu CV en la pestaña "Mi CV" para mejorar el matching.
-                    </div>
-                    {% endif %}
-                    {% if autoapply.last_error %}
-                    <div style="background:var(--danger-bg);border:1px solid #fecaca;border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:13px;">
-                        &#10007; Último error: <strong>{{ autoapply.last_error }}</strong> — Revisa las credenciales
-                    </div>
-                    {% endif %}
-
-                    {% if autoapply.running %}
-                    <div style="background:var(--warning-bg);border:1px solid #fde68a;border-radius:var(--radius-sm);padding:18px;margin-bottom:16px;text-align:center;">
-                        <span class="spinner"></span> <strong>Auto Apply en progreso...</strong>
-                        <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Enviando candidaturas. No cierres esta página.</p>
-                    </div>
-                    {% endif %}
-
-                    <div class="form-row" style="margin-bottom:16px;">
-                        <div class="form-group">
-                            <label>Email de Tecnoempleo</label>
-                            <input type="email" id="aa-email" placeholder="tuemail@ejemplo.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Contraseña de Tecnoempleo</label>
-                            <input type="password" id="aa-password" placeholder="••••••••">
-                        </div>
-                    </div>
-
-                    <div class="form-row" style="margin-bottom:16px;">
-                        <div class="form-group">
-                            <label>Score mínimo para auto-aplicar</label>
-                            <select id="aa-min-score" onchange="updateAAScoreInfo()">
-                                <option value="80">80% — Solo matches excelentes</option>
-                                <option value="60">60% — Buenos matches</option>
-                                <option value="50" selected>50% — Aceptables</option>
-                                <option value="40">40% — Bajos (no recomendado sin CV)</option>
-                                <option value="30">30% — Muy bajos</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button class="btn btn-accent" onclick="startAutoApply()" id="btn-autoapply">&#129302; Iniciar Auto Apply</button>
-                    <button class="btn btn-ghost btn-sm" onclick="rescoreJobs()" id="btn-rescore" style="margin-left:8px;">&#128260; Re-evaluar ofertas</button>
-                    <span id="aa-status" style="margin-left:12px;font-size:13px;color:var(--text-muted);"></span>
-
-                    <div id="aa-results" style="margin-top:20px;">
-                        {% if autoapply.results %}
-                        <h4 style="font-size:13px;margin-bottom:10px;">&#128203; Últimas candidaturas ({{ autoapply.applied }}/{{ autoapply.total }} aplicadas)</h4>
-                        {% for r in autoapply.results %}
-                        <div style="padding:10px 14px;margin-bottom:8px;border-radius:8px;border:1px solid var(--border);font-size:13px;
-                            {% if r.status == 'applied' %}background:var(--success-bg);border-color:#a7f3d0;{% elif r.status == 'skipped' %}background:#f9fafb;{% else %}background:var(--danger-bg);border-color:#fecaca;{% endif %}">
-                            <strong>{% if r.status == 'applied' %}&#10003;{% elif r.status == 'skipped' %}&#10149;{% else %}&#10007;{% endif %}
-                            {{ r.title[:60] }}</strong>
-                            <span style="color:var(--text-muted);font-size:11px;">— {{ r.company }}</span>
-                            <div style="color:var(--text-muted);font-size:11px;margin-top:3px;">{{ r.detail }}</div>
-                        </div>
-                        {% endfor %}
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        <div id="jobList" class="job-list"></div>
     </div>
 
-    <div id="toast" class="toast" style="display:none;"></div>
+    <!-- ──────────────────────────────────────────── TAB: CV ──────────────────────────────────────────── -->
+    <div id="tab-cv" class="page">
+        <h1 class="page-title">Mi CV</h1>
+        <div class="page-sub">Sube tu CV en PDF — se añadirán tecnologías y títulos a tus preferencias sin sobrescribir las fijas.</div>
 
-    <script>
-        function showTab(name) {
-            document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-            document.querySelectorAll('.nav-links a').forEach(function(a){ a.classList.remove('active'); });
-            var tab = document.getElementById('tab-' + name);
-            if (tab) tab.classList.add('active');
-            var link = document.querySelector('.nav-links a[href="#' + name + '"]');
-            if (link) link.classList.add('active');
-            window.location.hash = name;
-        }
+        <div class="card">
+            <div class="card-header">Subir CV</div>
+            <div class="card-body">
+                <div class="drop-zone" id="cvZone">
+                    <div class="dz-icon">&#128196;</div>
+                    <div class="dz-text">Arrastra tu CV aquí o haz clic</div>
+                    <div class="dz-sub">Solo PDF · se parsea automáticamente (IA o regex)</div>
+                </div>
+                <input type="file" id="cvInput" accept="application/pdf" hidden>
+                <div id="cvFileName"></div>
+                <div style="margin-top:14px;">
+                    <button class="btn btn-primary" id="btnUploadCv" onclick="uploadCvFromInput()" disabled>Subir y analizar</button>
+                    <button class="btn btn-ghost" id="btnRescanCv" onclick="rescanCv()" style="margin-left:8px;">Reanalizar CV actual</button>
+                </div>
+            </div>
+        </div>
 
-        function toast(msg, type) {
-            var t = document.getElementById('toast');
-            t.innerHTML = msg;
-            t.className = 'toast ' + (type || '');
-            t.style.display = 'block';
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(function(){ t.style.display = 'none'; }, 4500);
-        }
+        {% if profile_feed_html %}
+        <div class="card">
+            <div class="card-header">Perfil detectado</div>
+            <div class="card-body">
+                <div class="profile-card">
+                    {{ profile_feed_html | safe }}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body empty">
+                <div class="icon">&#128196;</div>
+                <h3>Sin CV cargado</h3>
+                <p>Sube tu CV para mejorar el matching y activar Auto Apply.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
 
-        // ── CV Upload ──
-        var cvZone = document.getElementById('cv-drop-zone');
-        var cvInput = document.getElementById('cv-file-input');
-        var cvFileName = document.getElementById('cv-file-name');
-        if (cvZone && cvInput) {
-            cvZone.addEventListener('click', function(){ cvInput.click(); });
-            cvZone.addEventListener('dragover', function(e){ e.preventDefault(); cvZone.classList.add('dragover'); });
-            cvZone.addEventListener('dragleave', function(){ cvZone.classList.remove('dragover'); });
-            cvZone.addEventListener('drop', function(e){
-                e.preventDefault(); cvZone.classList.remove('dragover');
-                if (e.dataTransfer.files.length) { cvInput.files = e.dataTransfer.files; cvFileName.textContent = 'Archivo: ' + e.dataTransfer.files[0].name; }
-            });
-            cvInput.addEventListener('change', function(){ cvFileName.textContent = cvInput.files.length ? 'Archivo: ' + cvInput.files[0].name : ''; });
-            var initForm = document.getElementById('cv-upload-form');
-            if (initForm) initForm.addEventListener('submit', handleCvUpload);
-        }
+    <!-- ──────────────────────────────────────────── TAB: PREFERENCIAS ──────────────────────────────────────────── -->
+    <div id="tab-preferencias" class="page">
+        <h1 class="page-title">Preferencias</h1>
+        <div class="page-sub"> Los 6 campos marcados con <span class="fixed-pill">FIJO</span> se reinician a sus valores por defecto al subir un CV. Puedes editarlos entre cargas, pero no se conservan tras una subida.</div>
 
-        var updateForm = document.getElementById('cv-upload-form-update');
-        if (updateForm) updateForm.addEventListener('submit', handleCvUpdate);
+        <form id="prefsForm" onsubmit="savePreferences(event)">
+            <div class="card">
+                <div class="card-header">Búsqueda</div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <div class="form-group form-full">
+                            <label>Títulos deseados (separados por comas)</label>
+                            <input type="text" name="desired_titles" value="{{ prefs.desired_titles|join(', ') }}" placeholder="Backend Developer, Python Developer...">
+                            <div class="hint">Usados para construir las queries de cada plataforma.</div>
+                        </div>
+                        <div class="form-group form-full">
+                            <label>Tecnologías (separadas por comas)</label>
+                            <input type="text" name="tech_stack" value="{{ prefs.tech_stack|join(', ') }}" placeholder="python, docker, react...">
+                        </div>
+                        <div class="form-group">
+                            <label>Ubicación <span class="fixed-pill">FIJO = Madrid</span></label>
+                            <input type="text" name="location" value="{{ prefs.location }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Seniority <span class="fixed-pill">FIJO = junior</span></label>
+                            <select name="seniority">
+                                {% set sen_vals = ["", "junior", "mid", "senior", "lead"] %}
+                                {% for s in sen_vals %}
+                                <option value="{{ s }}" {% if prefs.seniority == s %}selected{% endif %}>{{ s or "indiferente" }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Salario mínimo (€) <span class="fixed-pill">FIJO = 0</span></label>
+                            <input type="number" name="min_salary" value="{{ prefs.min_salary }}" min="0" step="1000">
+                        </div>
+                        <div class="form-group">
+                            <label>Modalidad</label>
+                            <div class="checkbox-grid" style="grid-template-columns:1fr;">
+                                <label class="checkbox-row"><input type="checkbox" name="remote_only" {% if prefs.remote_only %}checked{% endif %}> Solo remoto <span class="fixed-pill">FIJO = false</span></label>
+                                <label class="checkbox-row"><input type="checkbox" name="hybrid_allowed" {% if prefs.hybrid_allowed %}checked{% endif %}> Permitir híbrido <span class="fixed-pill">FIJO = true</span></label>
+                                <label class="checkbox-row"><input type="checkbox" name="onsite_allowed" {% if prefs.onsite_allowed %}checked{% endif %}> Permitir presencial <span class="fixed-pill">FIJO = false</span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        async function handleCvUpload(e) {
+            <div class="card">
+                <div class="card-header">Filtros</div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Palabras a evitar</label>
+                            <input type="text" name="exclude_keywords" value="{{ prefs.exclude_keywords|join(', ') }}" placeholder="WordPress, PHP...">
+                        </div>
+                        <div class="form-group">
+                            <label>Sectores a evitar</label>
+                            <input type="text" name="exclude_sectors" value="{{ prefs.exclude_sectors|join(', ') }}" placeholder="consulting, banking...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Plataformas activas</div>
+                <div class="card-body">
+                    <div class="checkbox-grid">
+                        <label class="checkbox-row"><input type="checkbox" name="scraper_tecnoempleo" {% if 'tecnoempleo' in prefs.enabled_scrapers %}checked{% endif %}> Tecnoempleo</label>
+                        <label class="checkbox-row"><input type="checkbox" name="scraper_infojobs" {% if 'infojobs' in prefs.enabled_scrapers %}checked{% endif %}> InfoJobs</label>
+                    </div>
+                    <div class="hint" style="margin-top:10px;">LinkedIn no está disponible (requiere Playwright + Chromium, incompat. con plan Railway $5).</div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">&#128190; Guardar preferencias</button>
+        </form>
+    </div>
+
+    <!-- ──────────────────────────────────────────── TAB: HISTORIAL ──────────────────────────────────────────── -->
+    <div id="tab-historial" class="page">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+            <div>
+                <h1 class="page-title">Historial</h1>
+                <div class="page-sub">Últimas ejecuciones de búsqueda. Solo se muestran las 50 más recientes.</div>
+            </div>
+            <button class="btn btn-ghost" onclick="clearHistory()">&#128465; Limpiar historial &gt;30 días</button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <table class="history">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Plataforma</th>
+                            <th>Estado</th>
+                            <th>Ofertas</th>
+                            <th>Duración</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+                <div id="historyEmpty" class="empty" style="display:none;">
+                    <div class="icon">&#128337;</div>
+                    <h3>Sin historial</h3>
+                    <p>Pulsa «Buscar ahora» para ejecutar la primera búsqueda.</p>
+                </div>
+                <div class="pager" id="historyPager"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────── TAB: AUTO APPLY ──────────────────────────────────────────── -->
+    <div id="tab-autoapply" class="page">
+        <h1 class="page-title">Auto Apply</h1>
+        <div class="page-sub">Inicia sesión en Tecnoempleo y envía candidaturas automáticamente con carta IA. Las ofertas que redirigen a webs externas se saltan.</div>
+
+        <div class="card">
+            <div class="card-header">&#129302; Auto Apply — Tecnoempleo</div>
+            <div class="card-body">
+                {% if autoapply.eligible_jobs is defined and autoapply.eligible_jobs == 0 %}
+                <div class="info-box info-warn">&#9888; No hay ofertas de Tecnoempleo puntuadas. Ejecuta primero una búsqueda en la pestaña Ofertas.</div>
+                {% elif autoapply.eligible_jobs is defined %}
+                <div class="info-box info-ok" id="aaEligibleInfo">&#128269; <strong id="aaEligibleCount">{{ autoapply.eligible_jobs }}</strong> ofertas de Tecnoempleo con score suficiente para auto-aplicar.</div>
+                {% endif %}
+
+                {% if not cv or not cv.technologies %}
+                <div class="info-box info-warn">&#9888; <strong>No tienes CV cargado.</strong> Las puntuaciones serán bajas. Sube tu CV en «Mi CV».</div>
+                {% endif %}
+                {% if autoapply.last_error %}
+                <div class="info-box info-err">&#10007; Último error: <strong>{{ autoapply.last_error }}</strong> — Revisa las credenciales.</div>
+                {% endif %}
+                {% if autoapply.running %}
+                <div class="info-box info-warn"><span class="spinner"></span> Auto Apply en progreso... no cierres la página.</div>
+                {% endif %}
+
+                <div class="form-grid" style="margin-bottom:14px;">
+                    <div class="form-group">
+                        <label>Email de Tecnoempleo</label>
+                        <input type="email" id="aaEmail" placeholder="tuemail@ejemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña de Tecnoempleo</label>
+                        <input type="password" id="aaPassword" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div class="form-group" style="max-width:320px; margin-bottom:16px;">
+                    <label>Score mínimo para auto-aplicar</label>
+                    <select id="aaMinScore" onchange="updateAAScoreInfo()">
+                        <option value="80">80% — Excelentes</option>
+                        <option value="60">60% — Buenos</option>
+                        <option value="50" selected>50% — Aceptables</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="startAutoApply()" id="aaStartBtn">&#9889; Iniciar Auto Apply</button>
+                    <button class="btn btn-ghost" onclick="refreshAAResults()">Refrescar</button>
+                </div>
+
+                <div id="aaResultsBox" style="margin-top:18px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ─────────────────────────────────── Theme (persisted) ───────────────────────────────────
+    (function applyInitialTheme() {
+        var saved = localStorage.getItem('js-theme');
+        if (!saved) saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', saved);
+        document.getElementById('themeToggle').textContent = saved === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+    })();
+    document.getElementById('themeToggle').addEventListener('click', function() {
+        var cur = document.documentElement.getAttribute('data-theme') || 'light';
+        var next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('js-theme', next);
+        this.textContent = next === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+    });
+
+    // ─────────────────────────────────── Tab navigation (no reload) ───────────────────────────────────
+    function showTab(name) {
+        document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+        document.querySelectorAll('.nav-links a').forEach(function(a) { a.classList.remove('active'); });
+        var tab = document.getElementById('tab-' + name);
+        if (tab) tab.classList.add('active');
+        var nav = document.querySelector('.nav-links a[data-tab="' + name + '"]');
+        if (nav) nav.classList.add('active');
+        if (history.replaceState) history.replaceState(null, '', '#' + name);
+        if (name === 'historial') loadHistory(1);
+        if (name === 'autoapply') refreshAAResults();
+    }
+    document.querySelectorAll('.nav-links a').forEach(function(a) {
+        a.addEventListener('click', function(e) {
             e.preventDefault();
-            var file = (document.getElementById('cv-file-input') || {}).files[0];
-            await doUploadCv(file, 'btn-upload-cv');
+            showTab(a.getAttribute('data-tab'));
+        });
+    });
+    (function initTab() {
+        var hash = (location.hash || '').replace('#', '');
+        if (hash && document.getElementById('tab-' + hash)) showTab(hash);
+    })();
+
+    // ─────────────────────────────────── Toast ───────────────────────────────────
+    function toast(msg, type) {
+        var t = document.createElement('div');
+        t.className = 'toast ' + (type || '');
+        t.textContent = msg;
+        document.body.appendChild(t);
+        requestAnimationFrame(function() { t.classList.add('show'); });
+        setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 300); }, 4200);
+    }
+    function esc(s) { if (!s) return ''; return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    // ─────────────────────────────────── Job list rendering ───────────────────────────────────
+    var _currentJobs = {{ jobs | tojson }};
+
+    function sourceClass(s) { return 'src-' + (s || '').toLowerCase(); }
+    function scoreClass(p) { return p >= 70 ? 'score-high' : (p >= 45 ? 'score-mid' : 'score-low'); }
+
+    function renderJobList(jobs) {
+        var box = document.getElementById('jobList');
+        document.getElementById('jobsCount').textContent = (jobs.length ? jobs.length + ' ofertas' : '');
+        if (!jobs.length) {
+            box.innerHTML = '<div class="empty"><div class="icon">&#128269;</div><h3>Sin ofertas</h3><p>Pulsa «Buscar ahora» para lanzar una búsqueda fresca.</p></div>';
+            return;
         }
+        var html = '';
+        jobs.forEach(function(j) {
+            var score = Math.round(j.match_score || 0);
+            var rawTechs = Array.isArray(j.technologies) ? j.technologies :
+                           ((j.technologies_detected || '').split(',').filter(Boolean));
+            var techs = rawTechs.slice(0, 6).map(function(t) { return '<span class="tech-badge">' + esc(t) + '</span>'; }).join('');
+            var modality = j.remote ? '<span class="modality-pill pill-remote">Remoto</span>' :
+                          j.hybrid ? '<span class="modality-pill pill-hybrid">Híbrido</span>' :
+                          '<span class="modality-pill pill-onsite">Presencial</span>';
+            var url = j.url ? esc(j.url) : '#';
+            html += '<div class="job-row" id="job-' + j.id + '">' +
+                '<div class="job-score ' + scoreClass(score) + '"><span class="pct">' + score + '</span><span class="pts">match</span></div>' +
+                '<div class="job-main">' +
+                    '<div class="job-title"><a href="' + url + '" target="_blank" rel="noopener">' + esc(j.title) + '</a> <span class="job-meta"><span class="src ' + sourceClass(j.source) + '">' + esc(j.source) + '</span></span></div>' +
+                    '<div class="job-meta">' + esc(j.company || '') + ' · ' + esc(j.location || '') + ' · ' + modality +
+                        (j.salary ? ' · <span>' + esc(j.salary) + '</span>' : '') +
+                    '</div>' +
+                    (techs ? '<div class="job-techs">' + techs + '</div>' : '') +
+                '</div>' +
+                '<div style="display:flex; gap:4px; align-items:center;">' +
+                    '<button class="icon-btn success" title="Ver oferta" onclick="window.open(\'' + url + '\', \'_blank\')">&#128065;</button>' +
+                    '<button class="icon-btn" title="Marcar aplicada" onclick="markApplied(' + j.id + ')">&#9989;</button>' +
+                    '<button class="icon-btn danger" title="Descartar" onclick="markDiscarded(' + j.id + ')">&#10060;</button>' +
+                '</div>' +
+            '</div>';
+        });
+        box.innerHTML = html;
+    }
 
-        async function handleCvUpdate(e) {
-            e.preventDefault();
-            var file = (document.getElementById('cv-file-input-update') || {}).files[0];
-            if (!file) { toast('Selecciona un archivo PDF', 'error'); return; }
-            if (!file.name.endsWith('.pdf')) { toast('Solo se aceptan archivos PDF', 'error'); return; }
-            await doUploadCv(file, 'btn-upload-cv-update');
-        }
+    var _filterTimer = null;
+    function applyFiltersDebounced() {
+        clearTimeout(_filterTimer);
+        _filterTimer = setTimeout(applyFilters, 250);
+    }
+    async function applyFilters() {
+        var q = document.getElementById('fQ').value.trim();
+        var src = document.getElementById('fSource').value;
+        var minScore = parseFloat(document.getElementById('fMinScore').value || '0');
 
-        async function doUploadCv(file, btnId) {
-            if (!file) { toast('Selecciona un archivo PDF', 'error'); return; }
-            if (!file.name.endsWith('.pdf')) { toast('Solo se aceptan archivos PDF', 'error'); return; }
-
-            var btn = document.getElementById(btnId);
-            if (!btn) return;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Analizando CV...';
-
-            var formData = new FormData();
-            formData.append('cv_file', file);
-
-            try {
-                var res = await fetch('/upload-cv', { method: 'POST', body: formData });
-                if (!res.ok) { var err = await res.json(); throw new Error(err.detail || 'Error'); }
-                var data = await res.json();
-
-                renderProfileFeed(data);
-
-                var statusBar = document.querySelector('#tab-cv .cv-status-bar');
-                if (statusBar) {
-                    statusBar.className = 'cv-status-bar loaded';
-                    statusBar.innerHTML = '<span class="cv-status-dot"></span> CV analizado &mdash; Preferencias actualizadas automáticamente desde tu perfil';
-                }
-
-                var form = document.getElementById('cv-upload-form');
-                if (form) form.style.display = 'none';
-
-                var section = document.querySelector('#tab-cv .upload-section');
-                if (!section) {
-                    section = document.createElement('div');
-                    section.className = 'upload-section';
-                    section.innerHTML = '<p>¿Nuevo CV? Súbelo y las preferencias se actualizarán solas:</p>' +
-                        '<form id="cv-upload-form-update" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;">' +
-                        '<input type="file" name="cv_file" accept=".pdf" id="cv-file-input-update" style="font-size:13px;">' +
-                        '<button type="submit" class="btn btn-ghost btn-sm" id="btn-upload-cv-update">&#128228; Actualizar CV</button></form>';
-                    document.getElementById('cv-card-body').appendChild(section);
-                    document.getElementById('cv-upload-form-update').addEventListener('submit', handleCvUpdate);
-                }
-
-                var techPreview = (data.technologies || []).slice(0, 8).join(', ');
-                toast('&#10003; CV analizado y preferencias actualizadas<br><small style="opacity:.8;">' + techPreview + '</small>', 'success');
-            } catch (err) {
-                toast('Error: ' + err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                if (btnId === 'btn-upload-cv') btn.innerHTML = '&#128640; Analizar CV y configurar búsquedas';
-                else btn.innerHTML = '&#128228; Actualizar CV';
+        // First pass: filter the already-rendered current batch (instant).
+        var local = _currentJobs.filter(function(j) {
+            if (minScore > 0 && (j.match_score || 0) < minScore) return false;
+            if (src && j.source !== src) return false;
+            if (q) {
+                var blob = ((j.title || '') + ' ' + (j.company || '') + ' ' + (j.technologies || []).join(' ') + ' ' + (j.location || '')).toLowerCase();
+                if (blob.indexOf(q.toLowerCase()) === -1) return false;
             }
-        }
+            return true;
+        });
+        renderJobList(local);
 
-        function renderProfileFeed(data) {
-            var feed = document.getElementById('profile-feed');
-            if (!feed) return;
-            feed.className = 'profile-feed show';
-
-            var initials = (data.full_name || 'CV').split(' ').slice(0,2).map(function(w){return (w[0]||'').toUpperCase();}).join('') || '?';
-            var expYears = data.experience_years || 0;
-            var techs = data.technologies || [];
-            var workHistory = data.work_history || [];
-            var education = data.education || [];
-            var langs = data.languages || [];
-            var certs = data.certifications || [];
-
-            var html = '<div class="profile-header">';
-            html += '<div class="profile-avatar">' + initials + '</div>';
-            html += '<div class="profile-name-box">';
-            html += '<h3>' + esc(data.full_name || 'Perfil CV') + '</h3>';
-            if (data.email) html += '<div class="subtitle">' + esc(data.email) + '</div>';
-            if (data.linkedin) html += '<div class="linkedin-link">' + esc(data.linkedin) + '</div>';
-            html += '</div></div>';
-
-            html += '<div class="profile-stats-row">';
-            html += '<div class="profile-stat"><span class="ps-val">' + expYears + '</span><span class="ps-lbl">Años exp.</span></div>';
-            html += '<div class="profile-stat"><span class="ps-val">' + techs.length + '</span><span class="ps-lbl">Tecnologías</span></div>';
-            html += '<div class="profile-stat"><span class="ps-val">' + workHistory.length + '</span><span class="ps-lbl">Empresas</span></div>';
-            html += '<div class="profile-stat"><span class="ps-val">' + langs.length + '</span><span class="ps-lbl">Idiomas</span></div>';
-            html += '</div>';
-
-            if (data.summary) {
-                html += '<div class="profile-section"><h4>&#128172; Resumen</h4><div class="profile-summary">' + esc(data.summary).substring(0, 500) + '</div></div>';
-            }
-
-            if (techs.length > 0) {
-                html += '<div class="profile-section"><h4>&#128187; Tecnologías</h4><div class="tech-grid">';
-                for (var i = 0; i < techs.length; i++) html += '<span class="tech-badge">' + esc(techs[i]) + '</span>';
-                html += '</div></div>';
-            }
-
-            if (workHistory.length > 0) {
-                html += '<div class="profile-section"><h4>&#128188; Experiencia</h4>';
-                for (var j = 0; j < Math.min(workHistory.length, 6); j++) {
-                    var w = workHistory[j];
-                    html += '<div class="timeline-item"><div class="ti-title">' + esc(w.title || '') + '</div>';
-                    html += '<div class="ti-sub">' + esc(w.company || '') + (w.period ? ' &middot; ' + esc(w.period) : '') + '</div>';
-                    if (w.description) html += '<div class="ti-desc">' + esc(w.description).substring(0, 200) + '</div></div>';
-                }
-                html += '</div>';
-            }
-
-            if (education.length > 0) {
-                html += '<div class="profile-section"><h4>&#127891; Formación</h4>';
-                for (var k = 0; k < Math.min(education.length, 4); k++) {
-                    var e = education[k];
-                    html += '<div class="timeline-item"><div class="ti-title">' + esc(e.degree || '') + '</div>';
-                    html += '<div class="ti-sub">' + esc(e.institution || '') + (e.year ? ' &middot; ' + esc(e.year) : '') + '</div></div>';
-                }
-                html += '</div>';
-            }
-
-            if (langs.length > 0) {
-                html += '<div class="profile-section"><h4>&#127760; Idiomas</h4><div class="tech-grid">';
-                for (var l = 0; l < langs.length; l++) html += '<span class="tech-badge">' + esc(langs[l]) + '</span>';
-                html += '</div></div>';
-            }
-
-            if (certs.length > 0) {
-                html += '<div class="profile-section"><h4>&#127942; Certificaciones</h4><div class="tech-grid">';
-                for (var c = 0; c < certs.length; c++) html += '<span class="tech-badge">' + esc(certs[c]) + '</span>';
-                html += '</div></div>';
-            }
-
-            feed.innerHTML = html;
-        }
-
-        function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-        // ── Preferences ──
-        var prefsForm = document.getElementById('prefs-form');
-        if (prefsForm) {
-            prefsForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                var form = e.target;
-                var enabled = [];
-                if (form.scraper_tecnoempleo && form.scraper_tecnoempleo.checked) enabled.push('tecnoempleo');
-                if (form.scraper_infojobs && form.scraper_infojobs.checked) enabled.push('infojobs');
-                if (form.scraper_linkedin && form.scraper_linkedin.checked) enabled.push('linkedin');
-                var data = {
-                    desired_titles: form.desired_titles.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
-                    tech_stack: form.tech_stack.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
-                    location: form.location.value,
-                    min_salary: parseInt(form.min_salary.value) || 0,
-                    seniority: form.seniority.value,
-                    remote_only: form.modality.value === 'remote',
-                    hybrid_allowed: form.modality.value === 'hybrid' || form.modality.value === 'any',
-                    onsite_allowed: form.modality.value === 'any',
-                    exclude_keywords: form.exclude_keywords.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
-                    exclude_sectors: form.exclude_sectors.value.split(',').map(function(s){return s.trim();}).filter(Boolean),
-                    enabled_scrapers: enabled,
-                };
-                try {
-                    var res = await fetch('/preferences', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-                    if (!res.ok) { var err = await res.json(); throw new Error(err.detail || 'Error'); }
-                    toast('&#10003; Preferencias guardadas', 'success');
-                } catch(err) { toast('Error: ' + err.message, 'error'); }
-            });
-        }
-
-        // ── Scrape with live updates ──
-        var _pollingTimer = null;
-
-        var _rateLimitTimer = null;
-
-        async function triggerScrape() {
-            var btn = document.getElementById('btn-scrape');
-            if (_rateLimitTimer) {
-                toast('Espera ' + Math.ceil(_rateLimitSeconds) + 's antes de otra búsqueda', 'error');
-                return;
-            }
-            btn.disabled = true;
-            setProgress('Iniciando búsqueda...', 10);
-
-            try {
-                var res = await fetch('/run', { method: 'POST' });
-                if (res.status === 429) {
-                    var errData = await res.json();
-                    var msg = errData.detail || 'Rate limit';
-                    var match = msg.match(/(\d+)s/);
-                    var waitSecs = match ? parseInt(match[1]) : 300;
-                    startRateLimit(waitSecs);
-                    toast(msg, 'error');
-                    return;
-                }
-                if (!res.ok) throw new Error('Error al iniciar');
-                setProgress('Buscando en Tecnoempleo e InfoJobs...', 25);
-                startPolling();
-            } catch(err) {
-                toast('Error: ' + err.message, 'error');
-                btn.disabled = false;
-                btn.innerHTML = '&#128260; Buscar ahora';
-                setProgress('', 0);
-            }
-        }
-
-        var _rateLimitSeconds = 0;
-        function startRateLimit(seconds) {
-            _rateLimitSeconds = seconds;
-            var btn = document.getElementById('btn-scrape');
-            btn.disabled = true;
-            btn.classList.add('rate-limited');
-            updateRateLimitBtn();
-            _rateLimitTimer = setInterval(function() {
-                _rateLimitSeconds--;
-                if (_rateLimitSeconds <= 0) {
-                    clearInterval(_rateLimitTimer);
-                    _rateLimitTimer = null;
-                    btn.disabled = false;
-                    btn.classList.remove('rate-limited');
-                    btn.innerHTML = '&#128260; Buscar ahora';
-                    return;
-                }
-                updateRateLimitBtn();
-            }, 1000);
-        }
-
-        function updateRateLimitBtn() {
-            var btn = document.getElementById('btn-scrape');
-            var mins = Math.floor(_rateLimitSeconds / 60);
-            var secs = _rateLimitSeconds % 60;
-            btn.innerHTML = '&#9203; ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
-        }
-
-        function setProgress(msg, pct) {
-            var btn = document.getElementById('btn-scrape');
-            if (pct > 0 && pct < 100) {
-                btn.innerHTML = '<span class="spinner"></span> ' + (msg || 'Buscando...');
-                btn.disabled = true;
-            } else if (pct >= 100) {
-                btn.disabled = false;
-                btn.innerHTML = '&#128260; Buscar ahora';
-                toast('&#10003; ' + (msg || 'Búsqueda completada'), 'success');
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = '&#128260; Buscar ahora';
-            }
-        }
-
-        function startPolling() {
-            var attempts = 0;
-            if (_pollingTimer) clearInterval(_pollingTimer);
-
-            _pollingTimer = setInterval(async function() {
-                attempts++;
-                try {
-                    var resp = await fetch('/jobs/today');
-                    var data = await resp.json();
-
-                    if (data.count > 0 && data.jobs && data.jobs.length > 0) {
-                        renderJobList(data.jobs);
-                        setProgress(data.count + ' ofertas encontradas', 100);
-                        clearInterval(_pollingTimer);
-                        _pollingTimer = null;
-
-                        // Update stats
-                        var statsResp = await fetch('/stats');
-                        var statsData = await statsResp.json();
-                        updateStats(statsData.service_stats);
-                        return;
-                    }
-
-                    if (attempts <= 8) {
-                        setProgress('Buscando... (' + (attempts * 3) + 's)', 25 + attempts * 8);
-                    } else if (attempts <= 15) {
-                        setProgress('Puntuando ofertas...', 60 + (attempts - 8) * 5);
-                    } else {
-                        // Timeout - stop polling
-                        clearInterval(_pollingTimer);
-                        _pollingTimer = null;
-                        setProgress('Búsqueda completada. Recarga si no ves resultados.', 100);
-                    }
-                } catch(e) {
-                    if (attempts > 15) {
-                        clearInterval(_pollingTimer);
-                        _pollingTimer = null;
-                        setProgress('', 0);
-                    }
-                }
-            }, 3000);
-        }
-
-        function renderJobList(jobs) {
-            var container = document.getElementById('jobs-list');
-            if (!container) return;
-
-            var header = document.getElementById('jobs-header');
-
-            if (!jobs || jobs.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="icon">&#128270;</div><h3>Sin ofertas</h3><p>No se encontraron ofertas con estos criterios.</p></div>';
-            } else {
-                var wrapper = document.createElement('div');
-                for (var i = 0; i < jobs.length; i++) {
-                    var j = jobs[i];
-                    var score = j.match_score || 0;
-                    var scoreClass = score >= 70 ? 'score-high' : (score >= 40 ? 'score-mid' : 'score-low');
-                    var techs = j.technologies || [];
-                    var techsHtml = '';
-                    for (var t = 0; t < Math.min(techs.length, 8); t++) {
-                        techsHtml += '<span class="tech-tag">' + esc(techs[t]) + '</span>';
-                    }
-
-                    var row = document.createElement('div');
-                    row.className = 'job-row';
-                    row.id = 'job-' + j.id;
-                    row.innerHTML =
-                        '<div class="job-score-widget ' + scoreClass + '">' + Math.round(score) + '%</div>' +
-                        '<div class="job-info">' +
-                            '<div class="job-title" title="' + esc(j.title) + '">' + esc(j.title) + '</div>' +
-                            '<div class="job-meta">' +
-                                esc(j.company || '?') + ' <span>&#128205; ' + esc(j.location || 'N/D') + '</span>' +
-                                (j.salary ? ' <span>&#128176; ' + esc(j.salary) + '</span>' : '') +
-                                ' <span class="source-tag source-' + j.source + '">' + j.source + '</span>' +
-                                (j.remote ? '<span class="badge-remote">Remoto</span>' : '') +
-                                (j.hybrid ? '<span class="badge-hybrid">Híbrido</span>' : '') +
-                            '</div>' +
-                            (techsHtml ? '<div class="job-tech">' + techsHtml + '</div>' : '') +
-                        '</div>' +
-                        '<div style="display:flex;gap:8px;flex-shrink:0;">' +
-                            '<a href="' + esc(j.url) + '" target="_blank" class="btn btn-primary btn-sm">Ver</a>' +
-                            '<button class="btn btn-success btn-sm" onclick="markApplied(' + j.id + ')">&#10003;</button>' +
-                            '<button class="btn btn-danger btn-sm" onclick="markDiscarded(' + j.id + ')">&#10007;</button>' +
-                        '</div>';
-                    wrapper.appendChild(row);
-                }
-                container.innerHTML = '';
-                container.appendChild(wrapper);
-            }
-            if (header) {
-                header.innerHTML = '&#128196; Ofertas encontradas <span style="font-size:12px;color:var(--text-muted);font-weight:500;">' + (jobs ? jobs.length : 0) + ' ofertas</span>';
-            }
-        }
-
-        async function applyFilters() {
-            var q = document.getElementById('filter-keyword').value;
-            var src = document.getElementById('filter-source').value;
-            var score = parseInt(document.getElementById('filter-score').value) || 0;
+        // Second pass: hit server for a wider, scored view.
+        try {
             var params = new URLSearchParams();
             if (q) params.set('q', q);
             if (src) params.set('source', src);
-            if (score > 0) params.set('min_score', score);
-            params.set('limit', '100');
-
-            try {
-                var res = await fetch('/jobs/search?' + params.toString());
-                var data = await res.json();
+            if (minScore > 0) params.set('min_score', minScore);
+            var res = await fetch('/jobs/search?' + params.toString());
+            if (!res.ok) return;
+            var data = await res.json();
+            if (data.jobs && data.jobs.length) {
+                _currentJobs = data.jobs;
                 renderJobList(data.jobs);
-            } catch(e) { console.error('Filter error:', e); }
-        }
-
-        function updateStats(stats) {
-            var cards = document.querySelectorAll('.stats-grid .stat-card .val');
-            if (cards.length >= 4) {
-                cards[0].textContent = stats.total_jobs || 0;
-                cards[1].textContent = stats.scored_jobs || 0;
-                cards[2].textContent = stats.notified_jobs || 0;
-                cards[3].textContent = stats.applied_jobs || 0;
             }
-        }
+        } catch (e) {}
+    }
 
-        // ── Job Actions ──
-        async function markApplied(id) {
+    // ─────────────────────────────────── Run / scrape ───────────────────────────────────
+    var _pollingTimer = null;
+    async function triggerScrape() {
+        var btn = document.getElementById('btnRun');
+        btn.disabled = true;
+        try {
+            var res = await fetch('/run', { method: 'POST' });
+            var data = await res.json();
+            if (!res.ok) {
+                toast(data.detail || 'No se pudo iniciar la búsqueda', 'error');
+                btn.disabled = false;
+                return;
+            }
+        } catch (e) {
+            toast('Error de red', 'error');
+            btn.disabled = false;
+            return;
+        }
+        toast('Búsqueda iniciada — lote fresco de ~50 ofertas', 'success');
+        document.getElementById('runBanner').classList.add('show');
+        startPolling();
+    }
+
+    function startPolling() {
+        clearInterval(_pollingTimer);
+        var attempt = 0;
+        _pollingTimer = setInterval(async function() {
+            attempt++;
             try {
-                await fetch('/jobs/' + id + '/apply', { method: 'POST' });
-                var row = document.getElementById('job-' + id);
-                if (row) { row.style.opacity = '0.4'; row.style.pointerEvents = 'none'; }
-                toast('&#10003; Marcada como aplicada', 'success');
-            } catch(err) { toast('Error al marcar', 'error'); }
-        }
-
-        async function markDiscarded(id) {
-            try {
-                await fetch('/jobs/' + id + '/discard', { method: 'POST' });
-                var row = document.getElementById('job-' + id);
-                if (row) { row.style.transition = 'opacity .3s'; row.style.opacity = '0'; setTimeout(function(){ row.remove(); }, 300); }
-                toast('Oferta descartada', 'success');
-            } catch(err) { toast('Error al descartar', 'error'); }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            var hash = window.location.hash.replace('#', '');
-            if (hash && ['ofertas', 'cv', 'preferencias', 'historial', 'autoapply'].indexOf(hash) >= 0) showTab(hash);
-        });
-
-        // ── Charts ──
-        var _chartOffers = null;
-        var _chartSources = null;
-
-        async function loadCharts() {
-            try {
-                var res = await fetch('/stats/history?days=7');
-                var data = await res.json();
-                var days = data.daily || [];
-                var labels = days.map(function(d){ return d.date.slice(5); });
-                var totals = days.map(function(d){ return d.total; });
-
-                var ctx1 = document.getElementById('chart-offers');
-                if (ctx1) {
-                    if (_chartOffers) _chartOffers.destroy();
-                    _chartOffers = new Chart(ctx1, {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Ofertas',
-                                data: totals,
-                                backgroundColor: 'rgba(124,58,237,0.6)',
-                                borderColor: '#7c3aed',
-                                borderWidth: 1,
-                                borderRadius: 6,
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                                y: { beginAtZero: true, ticks: { font: { size: 11 } }, grid: { color: '#f3f4f6' } },
-                                x: { ticks: { font: { size: 10 }, maxRotation: 45 } }
-                            }
-                        }
-                    });
+                var resp = await fetch('/jobs/today');
+                if (!resp.ok) return;
+                var data = await resp.json();
+                if (data.jobs && data.jobs.length) {
+                    _currentJobs = data.jobs;
+                    renderJobList(data.jobs);
+                    updateStatsFromData();
+                    if (attempt > 4) {
+                        clearInterval(_pollingTimer);
+                        document.getElementById('runBanner').classList.remove('show');
+                        document.getElementById('btnRun').disabled = false;
+                        toast('Búsqueda completada: ' + data.jobs.length + ' ofertas', 'success');
+                    }
                 }
-
-                var runs = data.raw_runs || [];
-                var sourceCounts = {};
-                for (var i = 0; i < runs.length; i++) {
-                    var s = runs[i].source || 'unknown';
-                    sourceCounts[s] = (sourceCounts[s] || 0) + (runs[i].offers_found || 0);
+                if (attempt > 30) {
+                    clearInterval(_pollingTimer);
+                    document.getElementById('runBanner').classList.remove('show');
+                    document.getElementById('btnRun').disabled = false;
                 }
-                var srcLabels = Object.keys(sourceCounts);
-                var srcData = srcLabels.map(function(k){ return sourceCounts[k]; });
-                var srcColors = { tecnoempleo: '#059669', infojobs: '#dc143c', linkedin: '#0a66c2' };
+            } catch (e) {}
+        }, 2500);
+    }
 
-                var ctx2 = document.getElementById('chart-sources');
-                if (ctx2) {
-                    if (_chartSources) _chartSources.destroy();
-                    _chartSources = new Chart(ctx2, {
-                        type: 'doughnut',
-                        data: {
-                            labels: srcLabels,
-                            datasets: [{
-                                data: srcData,
-                                backgroundColor: srcLabels.map(function(l){ return srcColors[l] || '#9ca3af'; }),
-                                borderWidth: 2,
-                                borderColor: '#fff',
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: { font: { size: 11 }, padding: 16, usePointStyle: true }
-                                }
-                            }
-                        }
-                    });
-                }
-            } catch(e) { console.error('Chart error:', e); }
-        }
+    async function updateStatsFromData() {
+        try {
+            var res = await fetch('/stats');
+            var d = await res.json();
+            var s = d.service_stats || {};
+            document.getElementById('statTotal').textContent = s.total_jobs || 0;
+            document.getElementById('statScored').textContent = s.scored_jobs || 0;
+            document.getElementById('statApplied').textContent = s.applied_jobs || 0;
+            document.getElementById('statExt').textContent = s.external_jobs || 0;
+        } catch (e) {}
+    }
 
-        var _origShowTab = showTab;
-        showTab = function(name) {
-            _origShowTab(name);
-            if (name === 'historial') {
-                setTimeout(loadCharts, 200);
-            }
-            if (name === 'ofertas') {
-                setTimeout(applyFilters, 200);
-            }
-            if (name === 'autoapply') {
-                loadAutoApplyStatus();
-            }
+    async function markApplied(id) {
+        try {
+            await fetch('/jobs/' + id + '/apply', { method: 'POST' });
+            toast('Marcada como aplicada', 'success');
+            _currentJobs = _currentJobs.filter(function(j) { return j.id !== id; });
+            renderJobList(_currentJobs);
+        } catch (e) { toast('Error', 'error'); }
+    }
+    async function markDiscarded(id) {
+        try {
+            await fetch('/jobs/' + id + '/discard', { method: 'POST' });
+            toast('Descartada', 'success');
+            var row = document.getElementById('job-' + id);
+            if (row) { row.style.transition = 'opacity .3s'; row.style.opacity = '0'; setTimeout(function() { row.remove(); }, 300); }
+            _currentJobs = _currentJobs.filter(function(j) { return j.id !== id; });
+        } catch (e) { toast('Error', 'error'); }
+    }
+
+    // ─────────────────────────────────── CV upload ───────────────────────────────────
+    var cvZone = document.getElementById('cvZone');
+    var cvInput = document.getElementById('cvInput');
+    var cvFileName = document.getElementById('cvFileName');
+    var btnUploadCv = document.getElementById('btnUploadCv');
+    cvZone.addEventListener('click', function() { cvInput.click(); });
+    cvZone.addEventListener('dragover', function(e) { e.preventDefault(); cvZone.classList.add('dragover'); });
+    cvZone.addEventListener('dragleave', function() { cvZone.classList.remove('dragover'); });
+    cvZone.addEventListener('drop', function(e) {
+        e.preventDefault(); cvZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) { cvInput.files = e.dataTransfer.files; onCvPicked(); }
+    });
+    cvInput.addEventListener('change', onCvPicked);
+    function onCvPicked() {
+        cvFileName.textContent = cvInput.files.length ? 'Archivo: ' + cvInput.files[0].name : '';
+        btnUploadCv.disabled = !cvInput.files.length;
+    }
+    async function uploadCvFromInput() {
+        if (!cvInput.files.length) return;
+        await doUploadCv(cvInput.files[0]);
+    }
+    async function rescanCv() {
+        // Ask the backend to re-analyze the most recent CV in /cv/ via a re-upload of current file.
+        toast('Reanálisis no disponible vía web — re-sube el PDF por favor', 'error');
+    }
+    async function doUploadCv(file) {
+        var fd = new FormData();
+        fd.append('cv_file', file);
+        var btn = document.getElementById('btnUploadCv');
+        btn.disabled = true; btn.textContent = 'Subiendo...';
+        try {
+            var res = await fetch('/upload-cv', { method: 'POST', body: fd });
+            var data = await res.json();
+            if (!res.ok) { toast(data.detail || 'Error al subir CV', 'error'); return; }
+            toast('CV analizado: ' + (data.full_name || 'OK') + ' · ' + (data.technologies || []).length + ' tecnologías', 'success');
+            setTimeout(function() { location.reload(); }, 1200);
+        } catch (e) { toast('Error de red', 'error'); }
+        finally { btn.disabled = false; btn.textContent = 'Subir y analizar'; }
+    }
+
+    // ─────────────────────────────────── Preferences ───────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        renderJobList(_currentJobs);
+    });
+    document.getElementById('prefsForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var f = e.target;
+        var enabled = [];
+        if (f.scraper_tecnoempleo.checked) enabled.push('tecnoempleo');
+        if (f.scraper_infojobs.checked) enabled.push('infojobs');
+        var payload = {
+            desired_titles: f.desired_titles.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+            tech_stack: f.tech_stack.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+            location: f.location.value,
+            min_salary: parseInt(f.min_salary.value || '0', 10),
+            seniority: f.seniority.value,
+            remote_only: f.remote_only.checked,
+            hybrid_allowed: f.hybrid_allowed.checked,
+            onsite_allowed: f.onsite_allowed.checked,
+            exclude_keywords: f.exclude_keywords.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+            exclude_sectors: f.exclude_sectors.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+            enabled_scrapers: enabled,
         };
+        try {
+            var res = await fetch('/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            var data = await res.json();
+            if (res.ok) toast('Preferencias guardadas', 'success');
+            else toast(data.detail || 'Error', 'error');
+        } catch (e) { toast('Error de red', 'error'); }
+    });
 
-        // ── Auto Apply ──
-        var _aaPolling = null;
-
-        async function startAutoApply() {
-            var email = document.getElementById('aa-email').value.trim();
-            var pwd = document.getElementById('aa-password').value.trim();
-            var minScore = parseInt(document.getElementById('aa-min-score').value) || 75;
-
-            if (!email || !pwd) { toast('Introduce email y contraseña de Tecnoempleo', 'error'); return; }
-
-            var btn = document.getElementById('btn-autoapply');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Iniciando...';
-            document.getElementById('aa-status').textContent = '';
-
-            try {
-                var res = await fetch('/auto-apply', {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({min_score: minScore, email: email, password: pwd})
-                });
-                var data = await res.json();
-                if (data.status === 'triggered') {
-                    btn.innerHTML = '<span class="spinner"></span> Auto Apply en marcha...';
-                    document.getElementById('aa-status').textContent = 'Aplicando a ofertas de Tecnoempleo...';
-                    startAAPolling();
-                } else {
-                    btn.disabled = false;
-                    btn.innerHTML = '&#129302; Iniciar Auto Apply';
-                    toast(data.reason || 'Error', 'error');
-                }
-            } catch(e) {
-                btn.disabled = false;
-                btn.innerHTML = '&#129302; Iniciar Auto Apply';
-                toast('Error: ' + e.message, 'error');
-            }
+    // ─────────────────────────────────── History (server-side pagination) ───────────────────────────────────
+    var _historyPage = 1;
+    async function loadHistory(page) {
+        _historyPage = page;
+        try {
+            var res = await fetch('/history?page=' + page + '&per_page=25');
+            if (!res.ok) return;
+            var d = await res.json();
+            renderHistory(d);
+        } catch (e) {}
+    }
+    function renderHistory(d) {
+        var body = document.getElementById('historyBody');
+        var empty = document.getElementById('historyEmpty');
+        var pager = document.getElementById('historyPager');
+        if (!d.runs || !d.runs.length) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            pager.innerHTML = '';
+            return;
         }
+        empty.style.display = 'none';
+        var html = '';
+        d.runs.forEach(function(r) {
+            var stCls = r.status === 'success' ? 'st-success' : (r.status === 'partial' ? 'st-partial' : 'st-failed');
+            html += '<tr>' +
+                '<td>' + esc((r.run_date || '').slice(0, 16).replace('T', ' ')) + '</td>' +
+                '<td><span class="src ' + sourceClass(r.source) + '">' + esc(r.source) + '</span></td>' +
+                '<td><span class="status-pill ' + stCls + '">' + esc(r.status) + '</span></td>' +
+                '<td>' + (r.offers_found || 0) + '</td>' +
+                '<td>' + (r.duration_seconds ? Number(r.duration_seconds).toFixed(1) + 's' : '-') + '</td>' +
+            '</tr>';
+        });
+        body.innerHTML = html;
+        var prev = '<button class="btn btn-ghost btn-xs" ' + (d.page <= 1 ? 'disabled' : 'onclick="loadHistory(' + (d.page - 1) + ')"') + '>‹</button>';
+        var next = '<button class="btn btn-ghost btn-xs" ' + (d.page >= d.total_pages ? 'disabled' : 'onclick="loadHistory(' + (d.page + 1) + ')"') + '>›</button>';
+        pager.innerHTML = prev + '<span class="info">Página ' + d.page + ' de ' + d.total_pages + ' · ' + d.total_shown + ' mostradas</span>' + next;
+    }
+    async function clearHistory() {
+        if (!confirm('¿Borrar el historial de ejecuciones anterior a 30 días?')) return;
+        try {
+            var res = await fetch('/history/clear', { method: 'POST' });
+            var d = await res.json();
+            toast('Borradas ' + (d.removed || 0) + ' ejecuciones', 'success');
+            loadHistory(1);
+        } catch (e) { toast('Error', 'error'); }
+    }
 
-        function startAAPolling() {
-            if (_aaPolling) clearInterval(_aaPolling);
-            var attempts = 0;
-            _aaPolling = setInterval(async function() {
-                attempts++;
-                try {
-                    var res = await fetch('/auto-apply/status');
-                    var data = await res.json();
-                    if (!data.running) {
-                        clearInterval(_aaPolling);
-                        _aaPolling = null;
-                        var btn = document.getElementById('btn-autoapply');
-                        btn.disabled = false;
-                        btn.innerHTML = '&#129302; Iniciar Auto Apply';
-                        var msg = data.applied + '/' + data.total + ' candidaturas enviadas';
-                        if (data.last_error) {
-                            msg += ' — Error: ' + data.last_error;
-                            toast('&#9888; Auto Apply: ' + data.last_error, 'error');
-                        }
-                        document.getElementById('aa-status').textContent = msg;
-                        toast('&#10003; Auto Apply completado: ' + msg, 'success');
-                        renderAAResults(data.results || []);
-                        return;
-                    }
-                    if (attempts % 5 === 0) {
-                        renderAAResults(data.results || []);
-                    }
-                    document.getElementById('aa-status').textContent = 'Procesando... ' + (data.applied || 0) + ' aplicadas';
-                } catch(e) {
-                    if (attempts > 30) {
-                        clearInterval(_aaPolling);
-                        _aaPolling = null;
-                    }
-                }
-            }, 4000);
+    // ─────────────────────────────────── Auto Apply ───────────────────────────────────
+    var _aaPolling = null;
+    async function startAutoApply() {
+        var email = document.getElementById('aaEmail').value.trim();
+        var password = document.getElementById('aaPassword').value;
+        var minScore = parseInt(document.getElementById('aaMinScore').value || '50', 10);
+        if (!email || !password) { toast('Introduce email y contraseña', 'error'); return; }
+        var btn = document.getElementById('aaStartBtn');
+        btn.disabled = true;
+        try {
+            var res = await fetch('/auto-apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password, min_score: minScore })
+            });
+            var d = await res.json();
+            if (res.ok) {
+                toast('Auto Apply iniciado en segundo plano', 'success');
+                startAAPolling();
+            } else { toast(d.detail || 'Error', 'error'); }
+        } catch (e) { toast('Error de red', 'error'); }
+        finally { btn.disabled = false; }
+    }
+    function startAAPolling() {
+        clearInterval(_aaPolling);
+        _aaPolling = setInterval(refreshAAResults, 5000);
+    }
+    async function refreshAAResults() {
+        try {
+            var res = await fetch('/auto-apply/status');
+            var d = await res.json();
+            renderAAResults(d);
+            if (!d.running) { clearInterval(_aaPolling); }
+        } catch (e) {}
+    }
+    function renderAAResults(d) {
+        var box = document.getElementById('aaResultsBox');
+        if (!d) return;
+        var info = (d.applied || 0) + ' aplicadas · ' + (d.total || 0) + ' totales';
+        var html = '<div class="info-box ' + (d.running ? 'info-warn' : 'info-ok') + '"><strong>' + info + '</strong>' + (d.running ? ' <span class="spinner"></span>' : '') + '</div>';
+        if (d.results && d.results.length) {
+            html += '<div class="job-list">';
+            d.results.slice(-30).reverse().forEach(function(r) {
+                var cls = r.status === 'applied' ? 'st-success' : (r.status === 'error' ? 'st-failed' : 'st-partial');
+                html += '<div class="aa-result-row">' +
+                    '<span class="aa-status-pill ' + cls + '">' + esc(r.status) + '</span>' +
+                    '<div style="flex:1; min-width:0;">' +
+                        '<div style="font-weight:600; font-size:13px;">' + esc(r.title || '') + '</div>' +
+                        '<div style="font-size:12px; color:var(--text-muted);">' + esc(r.company || '') + (r.detail ? ' — ' + esc(r.detail) : '') + '</div>' +
+                    '</div>' +
+                '</div>';
+            });
+            html += '</div>';
         }
-
-        async function loadAutoApplyStatus() {
-            try {
-                var res = await fetch('/auto-apply/status');
-                var data = await res.json();
-                if (data.results && data.results.length > 0) {
-                    renderAAResults(data.results);
-                }
-                if (data.running) {
-                    document.getElementById('btn-autoapply').disabled = true;
-                    document.getElementById('btn-autoapply').innerHTML = '<span class="spinner"></span> Auto Apply en marcha...';
-                    document.getElementById('aa-status').textContent = 'En progreso...';
-                    startAAPolling();
-                }
-                updateAAScoreInfo();
-            } catch(e) {}
-        }
-
-        async function rescoreJobs() {
-            var btn = document.getElementById('btn-rescore');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Re-evaluando...';
-            try {
-                var res = await fetch('/run', { method: 'POST' });
-                if (res.status === 429) {
-                    var errData = await res.json();
-                    toast(errData.detail || 'Espera antes de re-evaluar', 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = '&#128260; Re-evaluar ofertas';
-                    return;
-                }
-                toast('&#10003; Re-evaluación iniciada. Espera ~30s y recarga para ver nuevas puntuaciones.', 'success');
-                // Poll for completion
-                var attempts = 0;
-                var timer = setInterval(async function() {
-                    attempts++;
-                    try {
-                        var sres = await fetch('/auto-apply/status');
-                        var sdata = await sres.json();
-                        if (attempts > 20) {
-                            clearInterval(timer);
-                            btn.disabled = false;
-                            btn.innerHTML = '&#128260; Re-evaluar ofertas';
-                            updateAAScoreInfo();
-                            return;
-                        }
-                        if (!sdata.running && attempts > 3) {
-                            clearInterval(timer);
-                            btn.disabled = false;
-                            btn.innerHTML = '&#128260; Re-evaluar ofertas';
-                            updateAAScoreInfo();
-                            toast('&#10003; Ofertas re-evaluadas. Revisa las nuevas puntuaciones.', 'success');
-                        }
-                    } catch(e) {}
-                }, 5000);
-            } catch(e) {
-                btn.disabled = false;
-                btn.innerHTML = '&#128260; Re-evaluar ofertas';
-                toast('Error: ' + e.message, 'error');
-            }
-        }
-
-        async function updateAAScoreInfo() {
-            var sel = document.getElementById('aa-min-score');
-            var minScore = sel ? parseInt(sel.value) : 50;
-            try {
-                var res = await fetch('/auto-apply/eligible-count?min_score=' + minScore);
-                var data = await res.json();
-                var span = document.getElementById('aa-eligible-count');
-                if (span) span.textContent = data.count;
-                var box = document.getElementById('aa-eligible-info');
-                if (box) {
-                    if (data.count === 0) {
-                        box.style.background = 'var(--warning-bg)';
-                        box.style.borderColor = '#fde68a';
-                        box.innerHTML = '&#9888; <strong>0</strong> ofertas con score >= ' + minScore + '% — baja el umbral o ejecuta una búsqueda';
-                    } else {
-                        box.style.background = 'var(--success-bg)';
-                        box.style.borderColor = '#a7f3d0';
-                        box.innerHTML = '&#128269; <strong>' + data.count + '</strong> ofertas de Tecnoempleo con score >= ' + minScore + '%';
-                    }
-                }
-            } catch(e) {}
-        }
-
-        function renderAAResults(results) {
-            var container = document.getElementById('aa-results');
-            if (!container || !results.length) return;
-            var applied = results.filter(function(r){return r.status==='applied';}).length;
-            var html = '<h4 style="font-size:13px;margin-bottom:10px;">&#128203; Últimas candidaturas (' + applied + '/' + results.length + ' aplicadas)</h4>';
-            for (var i = results.length - 1; i >= 0; i--) {
-                var r = results[i];
-                var bg = r.status === 'applied' ? 'background:var(--success-bg);border-color:#a7f3d0;' :
-                         r.status === 'skipped' ? 'background:#f9fafb;' : 'background:var(--danger-bg);border-color:#fecaca;';
-                var icon = r.status === 'applied' ? '&#10003;' : (r.status === 'skipped' ? '&#10149;' : '&#10007;');
-                html += '<div style="padding:10px 14px;margin-bottom:8px;border-radius:8px;border:1px solid var(--border);font-size:13px;' + bg + '">' +
-                    '<strong>' + icon + ' ' + esc(r.title || '').substring(0, 60) + '</strong>' +
-                    '<span style="color:var(--text-muted);font-size:11px;"> — ' + esc(r.company || '') + '</span>' +
-                    '<div style="color:var(--text-muted);font-size:11px;margin-top:3px;">' + esc(r.detail || '') + '</div>' +
-                    '</div>';
-            }
-            container.innerHTML = html;
-        }
-    </script>
+        box.innerHTML = html;
+    }
+    async function updateAAScoreInfo() {
+        var v = parseInt(document.getElementById('aaMinScore').value || '50', 10);
+        try {
+            var res = await fetch('/auto-apply/eligible-count?min_score=' + v);
+            var d = await res.json();
+            var el = document.getElementById('aaEligibleCount');
+            if (el) el.textContent = d.count;
+        } catch (e) {}
+    }
+    (function aaInit() {
+        {% if autoapply.running %} startAAPolling(); {% endif %}
+        refreshAAResults();
+    })();
+</script>
 </body>
 </html>

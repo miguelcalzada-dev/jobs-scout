@@ -30,10 +30,7 @@ for d in [DATA_DIR, CV_DIR]:
 
 class Settings(BaseSettings):
     openai_api_key: str = ""
-    email_host: str = "smtp.gmail.com"
-    email_port: int = 587
     email_user: str = ""
-    email_password: str = ""
     email_from: str = ""
     email_to: str = ""
     daily_send_hour: int = 9
@@ -47,7 +44,9 @@ class Settings(BaseSettings):
     tecnoempleo_email: str = ""
     tecnoempleo_password: str = ""
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    # Tolerate legacy env vars (e.g. EMAIL_HOST/EMAIL_PORT/EMAIL_PASSWORD from
+    # the old SMTP path) so existing .env files keep working after the cleanup.
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 settings = Settings()
@@ -67,7 +66,7 @@ class JobPreferences:
     company_size: str = ""
     languages: list[str] = field(default_factory=list)
     exclude_sectors: list[str] = field(default_factory=list)
-    enabled_scrapers: list[str] = field(default_factory=lambda: ["tecnoempleo", "infojobs", "linkedin"])
+    enabled_scrapers: list[str] = field(default_factory=lambda: ["tecnoempleo", "infojobs"])
 
     def to_dict(self) -> dict:
         return asdict(self)

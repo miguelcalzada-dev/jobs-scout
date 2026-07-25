@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
-import re
-import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-from src.config import load_cv_profile, load_preferences, CV_DIR, settings
+from src.config import load_cv_profile, CV_DIR, settings
 
 logger = logging.getLogger(__name__)
 
+# Bounded result buffer (was unbounded — memory leak on long-running processes).
+MAX_KEPT_RESULTS = 100
 AUTOAPPLY_RESULTS: list[dict] = []
 _autoapply_running = False
 _min_auto_score = 75
@@ -47,16 +46,18 @@ async def run_autoapply(min_score: int = 75) -> dict:
         return {"status": "error", "reason": "playwright_not_installed"}
 
     from src.database import get_db, mark_as_applied
-    from datetime import timedelta
 
     cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
     with get_db() as conn:
         rows = conn.execute("""
-            SELECT * FROM job_offers
+            SELECT id, source, external_id, title, company, location, url,
+                   description, match_score, scrape_date
+            FROM job_offers
             WHERE source = 'tecnoempleo'
               AND match_score >= ?
               AND applied = 0
               AND discarded = 0
+              AND is_external_redirect = 0
               AND scrape_date >= ?
             ORDER BY match_score DESC
         """, (min_score, cutoff)).fetchall()
@@ -107,6 +108,9 @@ async def run_autoapply(min_score: int = 75) -> dict:
                     break
                 result = await _apply_to_job(page, job, cv, cv_pdf_path)
                 AUTOAPPLY_RESULTS.append(result)
+                # Keep buffer bounded to avoid unbounded growth.
+                if len(AUTOAPPLY_RESULTS) > MAX_KEPT_RESULTS:
+                    del AUTOAPPLY_RESULTS[: len(AUTOAPPLY_RESULTS) - MAX_KEPT_RESULTS]
                 logger.info(
                     f"AutoApply: [{result['status']}] {job['title'][:60]} "
                     f"({job['company']}) — {result.get('detail', '')}"
@@ -172,7 +176,8 @@ async def _login_tecnoempleo(page, email: str, password: str) -> bool:
         )
 
         if not logged_in:
-            cookies = await context.cookies()
+            ctx = page.context
+            cookies = await ctx.cookies()
             auth_cookies = [c for c in cookies if c.get("name", "").lower() in ("session", "tecnouser", "user", "login", "token", "phpsessid", "tecnosession")]
             if auth_cookies:
                 logged_in = True
@@ -280,26 +285,32 @@ async def _apply_to_job(page, job: dict, cv, cv_pdf_path: Optional[Path]) -> dic
 
         submit_btn = await page.query_selector(
             "button[type=submit], input[type=submit], button:has-text('Enviar'), "
-            "button:has-text('Solicitar'), button:has-text('Finalizar'), button.btn-success"
+            "button:has-text('Solicitar'), button:has-text('Finalizar'), "
+            "button:has-text('Confirmar'), button:has-text('Aplicar'), button.btn-success"
         )
         if submit_btn:
             await submit_btn.click()
             await page.wait_for_timeout(4000)
 
-            success_keywords = ["gracias", "éxito", "correctamente", "enviada", "inscrito",
-                              "candidatura enviada", "solicitud enviada", "te has inscrito"]
-            page_text = (await page.content()).lower()
-            if any(kw in page_text for kw in success_keywords):
-                from src.database import mark_as_applied
-                mark_as_applied(job_id)
-                result["status"] = "applied"
-                result["detail"] = f"candidatura enviada{', ' + questions_answered if questions_answered else ''}"
-                return result
+        post_click_url = page.url.lower()
+        page_text = (await page.content()).lower()
+        success_keywords = [
+            "gracias", "éxito", "exito", "correctamente", "enviada",
+            "inscrito", "candidatura enviada", "solicitud enviada",
+            "te has inscrito", "inscripción correcta", "felicidades",
+        ]
+        url_success = any(kw in post_click_url for kw in ["mis-candidaturas", "mis-candidatures", "candidatura", "micuenta", "confirmacion"])
+        if (any(kw in page_text for kw in success_keywords) or url_success):
+            from src.database import mark_as_applied
+            mark_as_applied(job_id)
+            result["status"] = "applied"
+            result["detail"] = "candidatura enviada" + (f", {questions_answered}" if questions_answered else "")
+            return result
 
-        result["status"] = "applied"
-        result["detail"] = "formulario completado" + (f", {questions_answered}" if questions_answered else "")
-        from src.database import mark_as_applied
-        mark_as_applied(job_id)
+        # No confirma explícita -> conservador: marcamos como completado pero
+        # NO como applied en BD para que el usuario pueda revisar.
+        result["status"] = "skipped"
+        result["detail"] = "sin confirmación de éxito tras enviar — revisa manualmente"
         return result
 
     except Exception as e:

@@ -130,8 +130,16 @@ def _score_from_preferences(job: dict, prefs) -> float:
             score -= 40.0
 
     cities_found = _detect_city_from_location(job_location, job_desc)
-    location_ok = prefs.location.lower() in job_location
+    pref_location = (prefs.location or "").lower().strip()
+    location_ok = bool(pref_location) and pref_location in job_location
     location_remoto = is_remote or "remoto" in job_location or "españa" in job_location or "espana" in job_location
+    pref_city_mismatch = (
+        bool(pref_location)
+        and not location_ok
+        and not location_remoto
+        and cities_found
+        and pref_location not in cities_found
+    )
 
     if prefs.location:
         if location_ok:
@@ -140,7 +148,7 @@ def _score_from_preferences(job: dict, prefs) -> float:
             score += 8.0
         elif location_remoto:
             score += 5.0
-        elif cities_found and "madrid" not in [c.lower() for c in cities_found]:
+        elif pref_city_mismatch:
             score -= 30.0
 
     if prefs.min_salary > 0 and job_salary > 0:
@@ -166,10 +174,13 @@ def _score_from_preferences(job: dict, prefs) -> float:
 
 
 async def score_all_unscored_jobs(rescore_all: bool = False) -> int:
+    if rescore_all:
+        from src.database import reset_all_scores
+        reset_all_scores()
     prefs = load_preferences()
     cv_profile = load_cv_profile()
 
-    jobs = get_unscored_jobs(limit=300, rescore_all=rescore_all)
+    jobs = get_unscored_jobs(limit=500)
     if not jobs:
         logger.info("No hay ofertas para puntuar")
         return 0

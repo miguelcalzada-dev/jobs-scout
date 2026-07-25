@@ -46,6 +46,7 @@ class JobOffer:
     seniority_level: str = ""
     company_size: str = ""
     sector: str = ""
+    is_external_redirect: bool = False
     raw_data: dict = field(default_factory=dict)
 
     @property

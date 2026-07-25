@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
-from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse, Response
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -25,8 +25,6 @@ from src.config import (
     save_preferences,
     load_cv_profile,
     save_cv_profile,
-    load_config,
-    save_config,
     settings,
     CVProfile,
 )
@@ -38,14 +36,17 @@ from src.database import (
     get_pending_notification_jobs,
     mark_as_notified,
     cleanup_old_jobs,
+    cleanup_old_scrape_runs,
+    clear_all_jobs,
     get_stats,
     log_scrape_run,
+    get_scrape_runs_paged,
     get_db,
 )
 from src.delivery import send_daily_email
 from src.matcher import score_all_unscored_jobs
 from src.scraper import ScrapeResult, ScrapeStatus
-from src.scrapers import TecnoempleoScraper, InfojobsScraper, LinkedInScraper
+from src.scrapers import TecnoempleoScraper, InfojobsScraper
 from src.autoapply import run_autoapply, get_autoapply_results
 
 logging.basicConfig(
@@ -61,17 +62,17 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 scheduler = AsyncIOScheduler(timezone=settings.tz)
 _is_running = False
-_rescore_next = False
 _last_run_status: dict = {"status": "idle", "last_run": None, "errors": []}
-_run_history: list[dict] = []
 
-_RATE_LIMIT_SECONDS = 300
+_RATE_LIMIT_SECONDS = 60
 _last_trigger_time: datetime | None = None
+
+# Per-source target so the combined batch is ~50 fresh offers.
+_TARGET_PER_SOURCE = 25
 
 _SCRAPER_MAP = {
     "tecnoempleo": TecnoempleoScraper,
     "infojobs": InfojobsScraper,
-    "linkedin": LinkedInScraper,
 }
 
 _jinja_env = Environment(
@@ -80,13 +81,8 @@ _jinja_env = Environment(
 )
 
 
-def get_scrape_runs(limit: int = 30) -> list[dict]:
-    with get_db() as conn:
-        rows = conn.execute(
-            "SELECT * FROM scrape_runs ORDER BY run_date DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
-    return [dict(r) for r in rows]
+def get_scrape_runs_page(page: int = 1, per_page: int = 25) -> dict:
+    return get_scrape_runs_paged(page=page, per_page=per_page, max_runs=50)
 
 
 async def run_daily_job() -> dict:
@@ -100,23 +96,25 @@ async def run_daily_job() -> dict:
     results = {"status": "running", "started_at": datetime.now().isoformat(), "sources": {}, "errors": []}
 
     try:
-        global _rescore_next
         prefs = load_preferences()
-        cv = load_cv_profile()
 
+        # Ensure non-fixed preferences always have sensible defaults (these do
+        # NOT override values already saved by the user — only fill empties).
         if not prefs.desired_titles:
             prefs.desired_titles = list(_TITULOS_POR_DEFECTO)
         if not prefs.tech_stack:
             prefs.tech_stack = list(_TECH_STACK_POR_DEFECTO)
 
-        for key, value in _PREFS_FIJOS.items():
-            setattr(prefs, key, value)
-
         logger.info("=" * 60)
-        logger.info("DAILY JOB SEARCH STARTING")
+        logger.info("JOB SEARCH STARTING")
         logger.info(f"  Remoto: {prefs.remote_only}, Seniority: {prefs.seniority or 'indiferente'}")
         logger.info(f"  Cargos: {prefs.desired_titles}")
         logger.info("=" * 60)
+
+        # Fresh batch: wipe prior job_offers so each search is a clean 50-offer lot.
+        removed = clear_all_jobs()
+        if removed:
+            logger.info(f"Cleared {removed} prior job rows for a fresh batch")
 
         scraper_classes = [
             cls for name, cls in _SCRAPER_MAP.items()
@@ -130,7 +128,7 @@ async def run_daily_job() -> dict:
             return results
 
         scrapers = [
-            cls(max_offers=40, max_job_age_days=settings.max_job_age_days)
+            cls(max_offers=_TARGET_PER_SOURCE, max_job_age_days=settings.max_job_age_days)
             for cls in scraper_classes
         ]
 
@@ -148,47 +146,53 @@ async def run_daily_job() -> dict:
                 )
                 return scraper, fake
 
+        # Parallel scraping (asyncio.gather) — httpx-based scrapers don't block.
         scrape_tasks = [_scrape_with_log(s) for s in scrapers]
         scrape_results = await asyncio.gather(*scrape_tasks, return_exceptions=True)
 
         all_offers = []
+        external_count = 0
         for item in scrape_results:
             if isinstance(item, BaseException):
                 logger.error(f"Scraper task crashed: {item}")
                 continue
             scraper, result = item
             source_name = scraper.source.value
+            inserted_offers = [o for o in (result.offers or []) if not o.is_external_redirect]
+            external_in_batch = sum(1 for o in (result.offers or []) if o.is_external_redirect)
             results["sources"][source_name] = {
                 "status": result.status.value,
-                "offers": result.offers_total,
+                "offers": len(inserted_offers),
+                "external_skipped": external_in_batch,
                 "duration": round(result.duration_seconds, 1),
             }
             log_scrape_run(
                 source=source_name,
                 status=result.status.value,
-                offers_found=result.offers_total,
+                offers_found=len(inserted_offers),
                 duration=result.duration_seconds,
                 error=result.error or "",
             )
             if result.offers:
                 inserted, skipped = bulk_insert_jobs(result.offers)
                 logger.info(
-                    f"  {source_name}: {result.offers_total} found, "
+                    f"  {source_name}: {len(result.offers)} found "
+                    f"({external_in_batch} external skipped), "
                     f"{inserted} new, {skipped} duplicates"
                 )
-                all_offers.extend(result.offers)
+                all_offers.extend(inserted_offers)
+                external_count += external_in_batch
             if result.error:
                 results["errors"].append(f"{source_name}: {result.error}")
 
         total_found = len(all_offers)
-        logger.info(f"Total offers scraped: {total_found} across all platforms")
+        logger.info(f"Total applicable offers scraped: {total_found} ({external_count} externas descartadas)")
 
-        if all_offers or _rescore_next:
+        if all_offers:
             logger.info("Puntuando ofertas...")
-            scored = await score_all_unscored_jobs(rescore_all=_rescore_next)
+            scored = await score_all_unscored_jobs()
             logger.info(f"Puntuadas {scored} ofertas")
             results["scored"] = scored
-            _rescore_next = False
 
         top_jobs = get_pending_notification_jobs(limit=settings.max_jobs_per_day)
 
@@ -228,12 +232,12 @@ async def run_daily_job() -> dict:
             "errors": results["errors"],
         }
 
-        logger.info(f"DAILY RUN COMPLETED in {duration:.1f}s - {len(top_jobs)} jobs delivered")
+        logger.info(f"RUN COMPLETED in {duration:.1f}s - {len(top_jobs)} jobs delivered")
         return results
 
     except Exception as e:
         duration = time.time() - start_time
-        logger.error(f"DAILY RUN FAILED: {e}", exc_info=True)
+        logger.error(f"RUN FAILED: {e}", exc_info=True)
         _last_run_status = {
             "status": "error",
             "last_run": datetime.now().isoformat(),
@@ -248,6 +252,9 @@ async def run_daily_job() -> dict:
     finally:
         _is_running = False
 
+        # Defensive: prune any stale rows older than 30 days (each run already
+        # clears the table via clear_all_jobs, this just protects the scrape_runs
+        # and any rows inserted by a manual DB poke).
         try:
             removed = cleanup_old_jobs(retention_days=30)
             if removed:
@@ -264,15 +271,21 @@ async def lifespan(app: FastAPI):
 
     prefs = load_preferences()
 
+    # On server restart we do NOT overwrite user preferences: only fill the
+    # non-fixed list fields when they are empty (first run). Fixed fields
+    # (seniority, location, etc.) are honored exactly as saved by the user.
+    needs_save = False
     if not prefs.desired_titles:
         prefs.desired_titles = list(_TITULOS_POR_DEFECTO)
+        needs_save = True
     if not prefs.tech_stack:
         prefs.tech_stack = list(_TECH_STACK_POR_DEFECTO)
-
-    for key, value in _PREFS_FIJOS.items():
-        setattr(prefs, key, value)
-
-    save_preferences(prefs)
+        needs_save = True
+    if not prefs.enabled_scrapers:
+        prefs.enabled_scrapers = ["tecnoempleo", "infojobs"]
+        needs_save = True
+    if needs_save:
+        save_preferences(prefs)
 
     cv = load_cv_profile()
 
@@ -314,6 +327,27 @@ app = FastAPI(
 @app.get("/")
 async def root():
     return RedirectResponse(url="/dashboard")
+
+
+# Inline SVG favicon (jobs-scout magnifying glass). Served as data so no extra
+# file needs to ship — keeps Railway compatibility and avoids static mounts.
+_FAVICON_SVG = b"""<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a84ff"/>
+      <stop offset="1" stop-color="#1d1d1f"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#g)"/>
+  <circle cx="27" cy="27" r="13" fill="none" stroke="#fff" stroke-width="4"/>
+  <line x1="37" y1="37" x2="50" y2="50" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+</svg>"""
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    return Response(content=_FAVICON_SVG, media_type="image/svg+xml")
 
 
 @app.get("/health")
@@ -411,7 +445,7 @@ async def jobs_today():
 
 @app.post("/run")
 async def trigger_run():
-    global _rescore_next, _last_trigger_time
+    global _last_trigger_time
     if _is_running:
         raise HTTPException(status_code=429, detail="Una búsqueda ya está en progreso")
     if _last_trigger_time and (datetime.now() - _last_trigger_time).total_seconds() < _RATE_LIMIT_SECONDS:
@@ -421,9 +455,8 @@ async def trigger_run():
             detail=f"Rate limit: espera {remaining}s antes de otra ejecución manual",
         )
     _last_trigger_time = datetime.now()
-    _rescore_next = True
     task = asyncio.create_task(run_daily_job())
-    return {"status": "triggered", "message": "Búsqueda diaria iniciada"}
+    return {"status": "triggered", "message": "Búsqueda iniciada — lote fresco de ~50 ofertas"}
 
 
 @app.post("/jobs/{job_id}/apply")
@@ -443,7 +476,7 @@ async def mark_discarded(job_id: int):
 @app.get("/jobs/search")
 async def search_jobs(q: str = "", source: str = "", min_score: float = 0, limit: int = 100):
     with get_db() as conn:
-        conditions = ["match_score > 0", "discarded = 0"]
+        conditions = ["match_score > 0", "discarded = 0", "is_external_redirect = 0"]
         params = []
 
         if q:
@@ -463,7 +496,11 @@ async def search_jobs(q: str = "", source: str = "", min_score: float = 0, limit
 
         where = " AND ".join(conditions)
         rows = conn.execute(
-            f"SELECT * FROM job_offers WHERE {where} ORDER BY match_score DESC LIMIT ?",
+            f"""SELECT id, source, external_id, title, company, location, url,
+                      salary, match_score, remote, hybrid, technologies_detected,
+                      seniority_level, scrape_date
+                FROM job_offers WHERE {where}
+                ORDER BY match_score DESC LIMIT ?""",
             params + [limit],
         ).fetchall()
 
@@ -490,47 +527,24 @@ async def search_jobs(q: str = "", source: str = "", min_score: float = 0, limit
 
 
 @app.get("/stats/history")
-async def stats_history(days: int = 30):
-    with get_db() as conn:
-        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
-        rows = conn.execute("""
-            SELECT run_date, source, status, offers_found
-            FROM scrape_runs
-            WHERE run_date >= ?
-            ORDER BY run_date ASC
-        """, (cutoff,)).fetchall()
-
-    from collections import defaultdict
-    daily = defaultdict(lambda: {"total": 0, "success": 0, "failed": 0})
-    for r in rows:
-        day = r["run_date"][:10]
-        daily[day]["total"] += r["offers_found"] or 0
-        if r["status"] == "success":
-            daily[day]["success"] += 1
-        else:
-            daily[day]["failed"] += 1
-
-    return {
-        "days": len(daily),
-        "daily": [{"date": d, **v} for d, v in sorted(daily.items())],
-        "raw_runs": [dict(r) for r in rows[-100:]],
-    }
+async def stats_history():
+    """Kept for backwards compatibility — returns a small summary, no charts."""
+    return get_scrape_runs_paged(page=1, per_page=25, max_runs=50)
 
 
-def _build_history_json() -> str:
-    try:
-        with get_db() as conn:
-            rows = conn.execute("""
-                SELECT run_date, source, status, offers_found
-                FROM scrape_runs
-                ORDER BY run_date DESC
-                LIMIT 200
-            """).fetchall()
-        runs = [dict(r) for r in rows]
-        import json as _json
-        return _json.dumps(runs, ensure_ascii=False)
-    except Exception:
-        return "[]"
+@app.get("/history")
+async def history(page: int = 1, per_page: int = 25):
+    page = max(1, min(page, 200))
+    per_page = max(5, min(per_page, 100))
+    return get_scrape_runs_paged(page=page, per_page=per_page, max_runs=50)
+
+
+@app.post("/history/clear")
+async def history_clear(days: int = 30):
+    days = max(1, min(days, 365))
+    removed = cleanup_old_scrape_runs(retention_days=days)
+    logger.info(f"Cleared {removed} scrape_runs older than {days} days")
+    return {"status": "ok", "removed": removed}
 
 
 @app.post("/upload-cv")
@@ -705,7 +719,7 @@ async def dashboard():
     jobs = get_top_jobs(limit=50, days=settings.max_job_age_days)
     cv = load_cv_profile()
     prefs = load_preferences()
-    scrape_runs = get_scrape_runs(limit=30)
+    history_page = get_scrape_runs_page(page=1, per_page=25)
 
     last_run = _last_run_status.get("last_run")
     if last_run:
@@ -714,8 +728,6 @@ async def dashboard():
         last_run_text = "Sin búsquedas aún"
 
     profile_feed_html = _build_profile_feed_html(cv) if cv else ""
-
-    history_json = _build_history_json()
     autoapply_data = get_autoapply_results()
 
     template = _jinja_env.get_template("dashboard.html")
@@ -724,11 +736,10 @@ async def dashboard():
         jobs=jobs,
         cv=cv,
         prefs=prefs,
-        scrape_runs=scrape_runs,
+        history=history_page,
         last_run_text=last_run_text,
         settings=settings,
         profile_feed_html=profile_feed_html,
-        history_json=history_json,
         autoapply=autoapply_data,
     )
 
