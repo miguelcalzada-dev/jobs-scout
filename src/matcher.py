@@ -128,7 +128,7 @@ def _score_from_preferences(job: dict, prefs) -> float:
         is_onsite = job.get("onsite") and not is_remote and not is_hybrid
 
     cities_found = _detect_city_from_location(job_location, job_desc)
-    pref_location = (prefs.location or "").lower().strip()
+    pref_location = (prefs.location or "Madrid").lower().strip()
 
     # For remote offers, the office location is irrelevant (work from anywhere).
     # For hybrid and onsite offers, the office city MUST match the preferred city
