@@ -212,6 +212,21 @@ def _score_from_preferences(job: dict, prefs) -> float:
     return score
 
 
+def _has_office_location_issue(job: dict) -> bool:
+    """Return True if this non-remote job cannot be commuted to from Madrid."""
+    is_remote = bool(job.get("remote"))
+    is_hybrid = bool(job.get("hybrid"))
+    if is_remote:
+        return False
+    if not is_hybrid and not job.get("onsite"):
+        return False
+    job_loc = (job.get("location") or "").lower()
+    if "madrid" in job_loc:
+        return False
+    # The office is NOT in Madrid and the job is NOT remote -> issue.
+    return True
+
+
 async def score_all_unscored_jobs(rescore_all: bool = False) -> int:
     if rescore_all:
         from src.database import reset_all_scores
@@ -260,6 +275,12 @@ async def score_all_unscored_jobs(rescore_all: bool = False) -> int:
                 final_score = 0.0
             elif final_score > 100:
                 final_score = 100.0
+
+            # Post-location clamp: if a hybrid/onsite job has a confirmed office
+            # location mismatch or unknown city, the offer is effectively a non-starter
+            # regardless of how many techs match.  Scale the score down hard.
+            if _has_office_location_issue(job):
+                final_score *= 0.18
 
             update_job_score(
                 external_id=job["external_id"],
