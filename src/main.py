@@ -468,6 +468,27 @@ async def trigger_rescore():
     return {"status": "ok", "scored": scored, "message": f"{scored} ofertas re-evaluadas con las reglas actuales"}
 
 
+@app.get("/debug/score-breakdown")
+async def debug_score_breakdown(job_id: int = 0):
+    from src.matcher import _score_from_preferences, _detect_modality_from_text
+    from src.config import load_preferences
+    from src.database import get_db
+    prefs = load_preferences()
+    breakdown = {"prefs": {"location": prefs.location, "hybrid_allowed": prefs.hybrid_allowed, "remote_only": prefs.remote_only, "onsite_allowed": prefs.onsite_allowed, "tech_stack": prefs.tech_stack[:10], "desired_titles": prefs.desired_titles[:5]}}
+    if job_id > 0:
+        with get_db() as conn:
+            row = conn.execute("SELECT * FROM job_offers WHERE id = ?", (job_id,)).fetchone()
+        if row:
+            j = dict(row)
+            breakdown["job"] = {"title": j["title"], "location": j["location"], "remote": j["remote"], "hybrid": j["hybrid"], "onsite": j["onsite"], "technologies_detected": j["technologies_detected"], "description_len": len(j["description"] or "")}
+            score = _score_from_preferences(j, prefs)
+            breakdown["rule_score"] = score
+            modality = _detect_modality_from_text(f"{j['title'] or ''} {j['description'] or ''} {j['location'] or ''}")
+            breakdown["text_modality"] = modality
+            breakdown["current_db_score"] = j["match_score"]
+    return breakdown
+
+
 @app.post("/jobs/{job_id}/apply")
 async def mark_applied(job_id: int):
     from src.database import mark_as_applied
