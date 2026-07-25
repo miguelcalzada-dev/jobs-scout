@@ -459,6 +459,15 @@ async def trigger_run():
     return {"status": "triggered", "message": "Búsqueda iniciada — lote fresco de ~50 ofertas"}
 
 
+@app.post("/rescore")
+async def trigger_rescore():
+    from src.matcher import score_all_unscored_jobs
+    if _is_running:
+        raise HTTPException(status_code=429, detail="Espera a que termine la búsqueda actual")
+    scored = await score_all_unscored_jobs(rescore_all=True)
+    return {"status": "ok", "scored": scored, "message": f"{scored} ofertas re-evaluadas con las reglas actuales"}
+
+
 @app.post("/jobs/{job_id}/apply")
 async def mark_applied(job_id: int):
     from src.database import mark_as_applied

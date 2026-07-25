@@ -424,7 +424,10 @@
                 <h1 class="page-title" style="margin-bottom:0;">Ofertas</h1>
                 <div class="muted">{{ last_run_text }}</div>
             </div>
-            <button class="btn btn-primary" id="btnRun" onclick="triggerScrape()">&#128269; Buscar ahora</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-sm" onclick="rescoreJobs()" id="btnRescore">&#128260; Re-evaluar</button>
+                <button class="btn btn-primary" id="btnRun" onclick="triggerScrape()">&#128269; Buscar ahora</button>
+            </div>
         </div>
 
         <div class="filters-bar">
@@ -1085,6 +1088,23 @@
             if (el) el.textContent = d.count;
         } catch (e) {}
     }
+    async function rescoreJobs() {
+        var btn = document.getElementById('btnRescore');
+        btn.disabled = true;
+        btn.textContent = 'Re-evaluando...';
+        try {
+            var res = await fetch('/rescore', { method: 'POST' });
+            var d = await res.json();
+            if (res.ok) {
+                toast(d.message || 'Re-evaluación completada', 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            } else {
+                toast(d.detail || 'Error', 'error');
+            }
+        } catch (e) { toast('Error de red', 'error'); }
+        finally { btn.disabled = false; btn.textContent = '🔁 Re-evaluar'; }
+    }
+
     (function aaInit() {
         {% if autoapply.running %} startAAPolling(); document.getElementById('aaCancelBtn').style.display = 'inline-flex'; {% endif %}
         refreshAAResults();
