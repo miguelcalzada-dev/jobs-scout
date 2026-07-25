@@ -114,6 +114,23 @@ def _score_from_preferences(job: dict, prefs) -> float:
     is_hybrid = job.get("hybrid") or modality["hybrid"]
     is_onsite = (job.get("onsite") and not is_remote and not is_hybrid) or modality["onsite"]
 
+    cities_found = _detect_city_from_location(job_location, job_desc)
+    pref_location = (prefs.location or "").lower().strip()
+
+    # For remote offers, the office location is irrelevant (work from anywhere).
+    # For hybrid and onsite offers, the office city MUST match the preferred city
+    # because the user cannot commute to another province (e.g. Madrid user can't
+    # work hybrid in Oviedo-Asturias). A hybrid in the wrong city is effectively
+    # useless -> penalize it like an onsite in a wrong city.
+    office_city_matches = bool(pref_location) and pref_location in job_location
+    office_city_mismatch = (
+        bool(pref_location)
+        and not office_city_matches
+        and not is_remote
+        and cities_found
+        and pref_location not in cities_found
+    )
+
     if is_remote:
         score += 15.0
     elif is_hybrid:
@@ -121,6 +138,9 @@ def _score_from_preferences(job: dict, prefs) -> float:
             score -= 35.0
         elif not prefs.hybrid_allowed:
             score -= 25.0
+        elif office_city_mismatch:
+            # Hybrid office in a non-preferred city -> user can't commute -> reject.
+            score -= 45.0
         else:
             score += 10.0
     elif is_onsite:
@@ -128,28 +148,18 @@ def _score_from_preferences(job: dict, prefs) -> float:
             score -= 50.0
         elif not prefs.onsite_allowed:
             score -= 40.0
+        elif office_city_mismatch:
+            score -= 45.0
 
-    cities_found = _detect_city_from_location(job_location, job_desc)
-    pref_location = (prefs.location or "").lower().strip()
-    location_ok = bool(pref_location) and pref_location in job_location
+    # Location scoring (only adds bonuses; mismatches already penalized above).
     location_remoto = is_remote or "remoto" in job_location or "españa" in job_location or "espana" in job_location
-    pref_city_mismatch = (
-        bool(pref_location)
-        and not location_ok
-        and not location_remoto
-        and cities_found
-        and pref_location not in cities_found
-    )
-
     if prefs.location:
-        if location_ok:
-            score += 12.0
-        elif location_remoto and is_remote:
+        if is_remote:
             score += 8.0
+        elif office_city_matches:
+            score += 12.0
         elif location_remoto:
             score += 5.0
-        elif pref_city_mismatch:
-            score -= 30.0
 
     if prefs.min_salary > 0 and job_salary > 0:
         if job_salary >= prefs.min_salary:

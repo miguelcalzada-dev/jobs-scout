@@ -648,6 +648,7 @@
 
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-primary" onclick="startAutoApply()" id="aaStartBtn">&#9889; Iniciar Auto Apply</button>
+                    <button class="btn btn-danger" onclick="cancelAutoApply()" id="aaCancelBtn" style="display:none;">&#9940; Detener tras la oferta actual</button>
                     <button class="btn btn-ghost" onclick="refreshAAResults()">Refrescar</button>
                 </div>
 
@@ -994,8 +995,9 @@
         var email = document.getElementById('aaEmail').value.trim();
         var password = document.getElementById('aaPassword').value;
         var minScore = parseInt(document.getElementById('aaMinScore').value || '50', 10);
-        if (!email || !password) { toast('Introduce email y contraseña', 'error'); return; }
+        if (!email || !password) { toast('Introduce email y contraseña de Tecnoempleo', 'error'); return; }
         var btn = document.getElementById('aaStartBtn');
+        var cancelBtn = document.getElementById('aaCancelBtn');
         btn.disabled = true;
         try {
             var res = await fetch('/auto-apply', {
@@ -1006,10 +1008,17 @@
             var d = await res.json();
             if (res.ok) {
                 toast('Auto Apply iniciado en segundo plano', 'success');
+                cancelBtn.style.display = 'inline-flex';
                 startAAPolling();
-            } else { toast(d.detail || 'Error', 'error'); }
-        } catch (e) { toast('Error de red', 'error'); }
-        finally { btn.disabled = false; }
+            } else { toast(d.detail || d.reason || 'Error', 'error'); btn.disabled = false; }
+        } catch (e) { toast('Error de red', 'error'); btn.disabled = false; }
+    }
+    async function cancelAutoApply() {
+        try {
+            await fetch('/auto-apply/cancel', { method: 'POST' });
+            toast('Cancelación solicitada — se detendrá tras la oferta actual', 'success');
+            document.getElementById('aaCancelBtn').style.display = 'none';
+        } catch (e) { toast('Error', 'error'); }
     }
     function startAAPolling() {
         clearInterval(_aaPolling);
@@ -1020,26 +1029,49 @@
             var res = await fetch('/auto-apply/status');
             var d = await res.json();
             renderAAResults(d);
-            if (!d.running) { clearInterval(_aaPolling); }
+            if (!d.running) {
+                clearInterval(_aaPolling);
+                document.getElementById('aaStartBtn').disabled = false;
+                document.getElementById('aaCancelBtn').style.display = 'none';
+            }
         } catch (e) {}
     }
     function renderAAResults(d) {
         var box = document.getElementById('aaResultsBox');
         if (!d) return;
-        var info = (d.applied || 0) + ' aplicadas · ' + (d.total || 0) + ' totales';
-        var html = '<div class="info-box ' + (d.running ? 'info-warn' : 'info-ok') + '"><strong>' + info + '</strong>' + (d.running ? ' <span class="spinner"></span>' : '') + '</div>';
+        var applied = d.applied || 0;
+        var already = d.already_applied || 0;
+        var skipped = d.skipped || 0;
+        var errors = d.errors || 0;
+        var total = d.total || 0;
+        var info = applied + ' aplicadas';
+        if (already) info += ' · ' + already + ' ya inscritas';
+        if (skipped) info += ' · ' + skipped + ' saltadas';
+        if (errors) info += ' · ' + errors + ' errores';
+        info += ' / ' + total + ' totales';
+        var bannerCls = d.running ? 'info-warn' : (applied > 0 ? 'info-ok' : 'info-err');
+        var html = '<div class="info-box ' + bannerCls + '"><strong>' + info + '</strong>' + (d.running ? ' <span class="spinner"></span> procesando...' : ' completado') + '</div>';
+        if (d.last_error && !d.running) {
+            html += '<div class="info-box info-err" style="margin-top:8px;">Último error: ' + esc(d.last_error) + '</div>';
+        }
         if (d.results && d.results.length) {
             html += '<div class="job-list">';
-            d.results.slice(-30).reverse().forEach(function(r) {
-                var cls = r.status === 'applied' ? 'st-success' : (r.status === 'error' ? 'st-failed' : 'st-partial');
+            d.results.slice(-40).reverse().forEach(function(r) {
+                var cls = r.status === 'applied' ? 'st-success' :
+                          (r.status === 'already_applied' ? 'st-partial' :
+                          (r.status === 'error' ? 'st-failed' : 'st-partial'));
+                var label = r.status === 'applied' ? 'Aplicada' :
+                           (r.status === 'already_applied' ? 'Ya inscrita' :
+                           (r.status === 'error' ? 'Error' : 'Saltada'));
                 html += '<div class="aa-result-row">' +
-                    '<span class="aa-status-pill ' + cls + '">' + esc(r.status) + '</span>' +
+                    '<span class="aa-status-pill ' + cls + '">' + label + '</span>' +
                     '<div style="flex:1; min-width:0;">' +
                         '<div style="font-weight:600; font-size:13px;">' + esc(r.title || '') + '</div>' +
                         '<div style="font-size:12px; color:var(--text-muted);">' + esc(r.company || '') + (r.detail ? ' — ' + esc(r.detail) : '') + '</div>' +
                     '</div>' +
                 '</div>';
             });
+            html += '<div class="muted" style="padding:10px 14px;">Mostrando las ' + Math.min(40, d.results.length) + ' más recientes de ' + d.results.length + '</div>';
             html += '</div>';
         }
         box.innerHTML = html;
@@ -1054,7 +1086,7 @@
         } catch (e) {}
     }
     (function aaInit() {
-        {% if autoapply.running %} startAAPolling(); {% endif %}
+        {% if autoapply.running %} startAAPolling(); document.getElementById('aaCancelBtn').style.display = 'inline-flex'; {% endif %}
         refreshAAResults();
     })();
 </script>

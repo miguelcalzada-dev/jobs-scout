@@ -857,12 +857,21 @@ async def autoapply_status():
     return get_autoapply_results()
 
 
+@app.post("/auto-apply/cancel")
+async def autoapply_cancel():
+    from src.autoapply import cancel_autoapply
+    cancel_autoapply()
+    return {"status": "ok", "message": "Cancelación solicitada (se detendrá tras la oferta actual)"}
+
+
 @app.get("/auto-apply/eligible-count")
 async def eligible_count(min_score: int = 50):
     with get_db() as conn:
         cutoff = (datetime.now() - timedelta(days=max(settings.max_job_age_days, 1))).isoformat()
         count = conn.execute(
-            "SELECT COUNT(*) FROM job_offers WHERE source = 'tecnoempleo' AND match_score >= ? AND applied = 0 AND discarded = 0 AND scrape_date >= ?",
+            "SELECT COUNT(*) FROM job_offers WHERE source = 'tecnoempleo' "
+            "AND match_score >= ? AND applied = 0 AND discarded = 0 "
+            "AND is_external_redirect = 0 AND scrape_date >= ?",
             (min_score, cutoff),
         ).fetchone()[0]
     return {"count": count, "min_score": min_score}
