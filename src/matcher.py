@@ -127,8 +127,19 @@ def _score_from_preferences(job: dict, prefs) -> float:
         bool(pref_location)
         and not office_city_matches
         and not is_remote
-        and cities_found
+        and bool(cities_found)
         and pref_location not in cities_found
+    )
+    # When a hybrid/onsite job does not disclose its office city at all
+    # (scrapers couldn't extract it, "No especificada"), we penalise it
+    # because the user cannot verify whether the office is reachable.
+    office_city_unknown = (
+        bool(pref_location)
+        and not is_remote
+        and not office_city_matches
+        and not bool(cities_found)
+        and "españa" not in job_location
+        and "espana" not in job_location
     )
 
     if is_remote:
@@ -141,6 +152,9 @@ def _score_from_preferences(job: dict, prefs) -> float:
         elif office_city_mismatch:
             # Hybrid office in a non-preferred city -> user can't commute -> reject.
             score -= 45.0
+        elif office_city_unknown:
+            # Hybrid office in unknown city -> unverifiable, moderate penalty.
+            score -= 25.0
         else:
             score += 10.0
     elif is_onsite:
@@ -150,6 +164,8 @@ def _score_from_preferences(job: dict, prefs) -> float:
             score -= 40.0
         elif office_city_mismatch:
             score -= 45.0
+        elif office_city_unknown:
+            score -= 25.0
 
     # Location scoring (only adds bonuses; mismatches already penalized above).
     location_remoto = is_remote or "remoto" in job_location or "españa" in job_location or "espana" in job_location
