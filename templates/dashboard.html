@@ -810,6 +810,8 @@
             return;
         }
         toast('Búsqueda iniciada — lote fresco de ~50 ofertas', 'success');
+        _currentJobs = [];
+        renderJobList([]);
         document.getElementById('runBanner').classList.add('show');
         startPolling();
     }
@@ -817,7 +819,9 @@
     function startPolling() {
         clearInterval(_pollingTimer);
         var attempt = 0;
+        var done = false;
         _pollingTimer = setInterval(async function() {
+            if (done) return;
             attempt++;
             try {
                 var resp = await fetch('/jobs/today');
@@ -827,17 +831,19 @@
                     _currentJobs = data.jobs;
                     renderJobList(data.jobs);
                     updateStatsFromData();
-                    if (attempt > 4) {
-                        clearInterval(_pollingTimer);
-                        document.getElementById('runBanner').classList.remove('show');
-                        document.getElementById('btnRun').disabled = false;
-                        toast('Búsqueda completada: ' + data.jobs.length + ' ofertas', 'success');
-                    }
-                }
-                if (attempt > 30) {
+                    done = true;
                     clearInterval(_pollingTimer);
                     document.getElementById('runBanner').classList.remove('show');
                     document.getElementById('btnRun').disabled = false;
+                    toast('Búsqueda completada: ' + data.jobs.length + ' ofertas', 'success');
+                    return;
+                }
+                if (attempt > 30) {
+                    done = true;
+                    clearInterval(_pollingTimer);
+                    document.getElementById('runBanner').classList.remove('show');
+                    document.getElementById('btnRun').disabled = false;
+                    toast('La búsqueda está tardando más de lo esperado — vuelve a comprobarlo en unos segundos', 'error');
                 }
             } catch (e) {}
         }, 2500);

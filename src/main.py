@@ -62,6 +62,7 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 scheduler = AsyncIOScheduler(timezone=settings.tz)
 _is_running = False
+_run_lock = asyncio.Lock()
 _last_run_status: dict = {"status": "idle", "last_run": None, "errors": []}
 
 _RATE_LIMIT_SECONDS = 60
@@ -87,11 +88,11 @@ def get_scrape_runs_page(page: int = 1, per_page: int = 25) -> dict:
 
 async def run_daily_job() -> dict:
     global _is_running, _last_run_status
-    if _is_running:
-        logger.warning("A daily run is already in progress, skipping")
-        return {"status": "skipped", "reason": "already_running"}
-
-    _is_running = True
+    async with _run_lock:
+        if _is_running:
+            logger.warning("A daily run is already in progress, skipping")
+            return {"status": "skipped", "reason": "already_running"}
+        _is_running = True
     start_time = time.time()
     results = {"status": "running", "started_at": datetime.now().isoformat(), "sources": {}, "errors": []}
 
@@ -446,15 +447,16 @@ async def jobs_today():
 @app.post("/run")
 async def trigger_run():
     global _last_trigger_time
-    if _is_running:
-        raise HTTPException(status_code=429, detail="Una búsqueda ya está en progreso")
-    if _last_trigger_time and (datetime.now() - _last_trigger_time).total_seconds() < _RATE_LIMIT_SECONDS:
-        remaining = int(_RATE_LIMIT_SECONDS - (datetime.now() - _last_trigger_time).total_seconds())
-        raise HTTPException(
-            status_code=429,
-            detail=f"Rate limit: espera {remaining}s antes de otra ejecución manual",
-        )
-    _last_trigger_time = datetime.now()
+    async with _run_lock:
+        if _is_running:
+            raise HTTPException(status_code=429, detail="Una búsqueda ya está en progreso")
+        if _last_trigger_time and (datetime.now() - _last_trigger_time).total_seconds() < _RATE_LIMIT_SECONDS:
+            remaining = int(_RATE_LIMIT_SECONDS - (datetime.now() - _last_trigger_time).total_seconds())
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit: espera {remaining}s antes de otra ejecución manual",
+            )
+        _last_trigger_time = datetime.now()
     task = asyncio.create_task(run_daily_job())
     return {"status": "triggered", "message": "Búsqueda iniciada — lote fresco de ~50 ofertas"}
 

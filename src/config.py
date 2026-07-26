@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     email_to: str = ""
     daily_send_hour: int = 9
     daily_send_minute: int = 0
-    max_jobs_per_day: int = 10
+    max_jobs_per_day: int = 50
     port: int = 8080
     environment: str = "development"
     max_job_age_days: int = 3
