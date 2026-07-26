@@ -143,8 +143,7 @@
         .page-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
 
         /* ── Stats ── */
-        .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
-        @media (max-width: 720px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+        .stats-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin-bottom: 24px; }
         .stat-card {
             background: var(--card-bg);
             padding: 22px 20px;
@@ -415,8 +414,6 @@
         <div class="stats-grid">
             <div class="stat-card s1"><div class="val" id="statTotal">{{ stats.total_jobs }}</div><div class="lbl">Ofertas lote actual</div></div>
             <div class="stat-card s2"><div class="val" id="statScored">{{ stats.scored_jobs }}</div><div class="lbl">Puntuadas</div></div>
-            <div class="stat-card s3"><div class="val" id="statApplied">{{ stats.applied_jobs }}</div><div class="lbl">Aplicadas</div></div>
-            <div class="stat-card s4"><div class="val" id="statExt">{{ stats.external_jobs }}</div><div class="lbl">Externas descartadas</div></div>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
@@ -824,17 +821,18 @@
             if (done) return;
             attempt++;
             try {
+                updateStatsFromData();
                 var resp = await fetch('/jobs/today');
                 if (!resp.ok) return;
                 var data = await resp.json();
                 if (data.jobs && data.jobs.length) {
                     _currentJobs = data.jobs;
                     renderJobList(data.jobs);
-                    updateStatsFromData();
                     done = true;
                     clearInterval(_pollingTimer);
                     document.getElementById('runBanner').classList.remove('show');
                     document.getElementById('btnRun').disabled = false;
+                    updateStatsFromData();
                     toast('Búsqueda completada: ' + data.jobs.length + ' ofertas', 'success');
                     return;
                 }
@@ -843,6 +841,7 @@
                     clearInterval(_pollingTimer);
                     document.getElementById('runBanner').classList.remove('show');
                     document.getElementById('btnRun').disabled = false;
+                    updateStatsFromData();
                     toast('La búsqueda está tardando más de lo esperado — vuelve a comprobarlo en unos segundos', 'error');
                 }
             } catch (e) {}
@@ -856,8 +855,6 @@
             var s = d.service_stats || {};
             document.getElementById('statTotal').textContent = s.total_jobs || 0;
             document.getElementById('statScored').textContent = s.scored_jobs || 0;
-            document.getElementById('statApplied').textContent = s.applied_jobs || 0;
-            document.getElementById('statExt').textContent = s.external_jobs || 0;
         } catch (e) {}
     }
 

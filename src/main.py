@@ -414,7 +414,7 @@ async def stats():
             "max_job_age_days": settings.max_job_age_days,
             "tz": settings.tz,
         },
-    })
+    }, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/jobs/today")
@@ -441,7 +441,7 @@ async def jobs_today():
             }
             for j in jobs
         ],
-    })
+    }, headers={"Cache-Control": "no-store"})
 
 
 @app.post("/run")
@@ -536,7 +536,7 @@ async def search_jobs(q: str = "", source: str = "", min_score: float = 0, limit
             params + [limit],
         ).fetchall()
 
-    return {
+    return JSONResponse({
         "count": len(rows),
         "jobs": [
             {
@@ -555,7 +555,7 @@ async def search_jobs(q: str = "", source: str = "", min_score: float = 0, limit
             }
             for r in rows
         ],
-    }
+    }, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/stats/history")
@@ -763,7 +763,7 @@ async def dashboard():
     autoapply_data = get_autoapply_results()
 
     template = _jinja_env.get_template("dashboard.html")
-    return template.render(
+    html = template.render(
         stats=stats_data,
         jobs=jobs,
         cv=cv,
@@ -774,6 +774,7 @@ async def dashboard():
         profile_feed_html=profile_feed_html,
         autoapply=autoapply_data,
     )
+    return HTMLResponse(content=html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache", "Expires": "0"})
 
 
 def _build_profile_feed_html(cv) -> str:
