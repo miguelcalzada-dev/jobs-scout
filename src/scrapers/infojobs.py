@@ -136,7 +136,6 @@ class InfojobsScraper(BaseScraper):
         title_el = card.select_one("h2, h3, a[class*=title], [class*=title]")
         company_el = card.select_one("[class*=company], [class*=subtitle], [class*=employer]")
         location_el = card.select_one("[class*=location], [class*=city], [class*=place]")
-        link_el = card.select_one("a[href*='infojobs.net']")
 
         if not title_el:
             title_el = card.select_one("a")
@@ -149,14 +148,25 @@ class InfojobsScraper(BaseScraper):
 
         is_external = False
         url = ""
-        if link_el:
-            href = link_el.get("href", "")
-            if href:
-                if href.startswith("http") and BASE_URL not in href and "infojobs" not in href:
-                    is_external = True
-                    url = href
-                else:
-                    url = href if href.startswith("http") else urljoin(BASE_URL, href)
+        if title_el.name == "a":
+            href = title_el.get("href", "")
+            url = href if href.startswith("http") else urljoin(BASE_URL, href)
+        else:
+            title_link = title_el.select_one("a[href]")
+            if title_link:
+                href = title_link.get("href", "")
+                url = href if href.startswith("http") else urljoin(BASE_URL, href)
+
+        if not url:
+            offer_link = card.select_one("a[href*='oferta'], a[href*='offer'], a[href*='job']")
+            if not offer_link:
+                offer_link = card.select_one("a[href*='infojobs.net']")
+            if offer_link:
+                href = offer_link.get("href", "")
+                url = href if href.startswith("http") else urljoin(BASE_URL, href)
+
+        if url and BASE_URL not in url and "infojobs" not in url:
+            is_external = True
 
         external_id = hashlib.md5((title + url).encode()).hexdigest()[:16]
         company = company_el.get_text(strip=True) if company_el else ""

@@ -9,6 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from src.config import load_preferences, load_cv_profile, settings
 from src.database import get_unscored_jobs, update_job_score
+from src.scrapers._common import detect_min_experience_years
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +209,12 @@ def _score_from_preferences(job: dict, prefs) -> float:
     for sector in prefs.exclude_sectors:
         if sector.lower() in job_text or sector.lower() in job_company:
             score -= 30.0
+
+    exp_years = detect_min_experience_years(job_text)
+    if exp_years > 7:
+        score -= 90.0
+    elif exp_years > 5:
+        score -= 60.0
 
     return score
 

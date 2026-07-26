@@ -64,3 +64,50 @@ def is_hybrid_text(text: str) -> bool:
         "híbrido", "hibrido", "hybrid", "semanal", "2-3 días", "2 días",
         "modelo híbrido", "trabajo híbrido",
     ])
+
+
+def detect_min_experience_years(text: str) -> int:
+    if not text:
+        return 0
+    text_lower = text.lower()
+
+    more_than = re.findall(
+        r'(?:m[aá]s\s+de|superior\s+a|mayor\s+de)\s+(\d+)\s*(?:a[ñn]os?|years?)',
+        text_lower,
+    )
+    if more_than:
+        return int(more_than[0]) + 1
+
+    plus = re.findall(r'(\d+)\+\s*(?:a[ñn]os?|years?)', text_lower)
+    if plus:
+        return int(plus[0])
+
+    min_pat = re.findall(
+        r'(?:m[ií]nimo|al\s+menos)\s+(\d+)\s*(?:a[ñn]os?|years?)',
+        text_lower,
+    )
+    if min_pat:
+        return int(min_pat[0])
+
+    min_exp_pat = re.findall(
+        r'(?:experiencia\s+)?m[ií]nima?\s+(?:de\s+)?(\d+)\s*(?:a[ñn]os?|years?)',
+        text_lower,
+    )
+    if min_exp_pat:
+        return int(min_exp_pat[0])
+
+    between = re.findall(
+        r'entre\s+(\d+)\s*(?:y|a|e|-)\s*\d+\s*(?:a[ñn]os?|years?)',
+        text_lower,
+    )
+    if between:
+        return int(between[0])
+
+    exp_years = re.findall(
+        r'(?:^|\s)(\d+)\s*(?:a[ñn]os?|years?)\s*(?:de\s+)?experiencia',
+        text_lower,
+    )
+    if exp_years:
+        return int(exp_years[0])
+
+    return 0
