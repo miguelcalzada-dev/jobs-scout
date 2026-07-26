@@ -54,13 +54,27 @@ class InfojobsScraper(BaseScraper):
         if not titles:
             titles = ["python developer", "backend developer"]
 
-        for title in titles[:5]:
-            if len(all_offers) >= self.max_offers:
+        shuffled_titles = list(titles)
+        random.shuffle(shuffled_titles)
+
+        tech_keywords = [t for t in (prefs.tech_stack or []) if t and len(t) > 2]
+        random.shuffle(tech_keywords)
+
+        search_terms = []
+        for t in shuffled_titles[:6]:
+            search_terms.append(t)
+        for t in tech_keywords[:4]:
+            search_terms.append(t)
+
+        random.shuffle(search_terms)
+
+        for query in search_terms:
+            if len(all_offers) >= self.max_offers * 3:
                 break
-            offers = await self._scrape_page(title, location=prefs.location)
+            offers = await self._scrape_page(query, location=prefs.location)
             all_offers.extend(offers)
-            if len(titles) > 1:
-                await asyncio.sleep(random.uniform(1.0, 2.0))
+            if len(search_terms) > 1:
+                await asyncio.sleep(random.uniform(0.8, 1.6))
 
         seen = set()
         unique = []

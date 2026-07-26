@@ -45,24 +45,33 @@ class TecnoempleoScraper(BaseScraper):
 
     async def _search(self, prefs) -> list[JobOffer]:
         all_offers: list[JobOffer] = []
-        # Build queries from desired_titles so parameters are actually used.
         titles = [t for t in (prefs.desired_titles or []) if t]
         if not titles:
             titles = ["python", "desarrollador"]
 
-        for title in titles[:3]:
-            # Tecnnoempleo search uses technology/keyword as path segment.
-            query = title.lower().strip().replace(" ", "-")
+        shuffled_titles = list(titles)
+        random.shuffle(shuffled_titles)
+
+        tech_keywords = [t for t in (prefs.tech_stack or []) if t and len(t) > 2]
+        random.shuffle(tech_keywords)
+
+        search_terms = []
+        for t in shuffled_titles[:5]:
+            search_terms.append(t.lower().strip().replace(" ", "-"))
+        for t in tech_keywords[:3]:
+            search_terms.append(t.lower().strip())
+
+        random.shuffle(search_terms)
+
+        for query in search_terms:
             offers = await self._scrape_page(query, page=1, location=prefs.location)
             all_offers.extend(offers)
-            if len(all_offers) >= self.max_offers:
-                break
-            await asyncio.sleep(random.uniform(1.0, 2.5))
+            await asyncio.sleep(random.uniform(0.8, 1.8))
 
-            if len(all_offers) < self.max_offers:
+            if len(all_offers) < self.max_offers * 2:
                 extra = await self._scrape_page(query, page=2, location=prefs.location)
                 all_offers.extend(extra)
-                await asyncio.sleep(random.uniform(1.0, 2.0))
+                await asyncio.sleep(random.uniform(0.6, 1.4))
 
         seen = set()
         unique = []
